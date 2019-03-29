@@ -54,6 +54,7 @@ int main(int argc, char *argv[])
    int order = 1;
    bool static_cond = false;
    bool visualization = 1;
+   bool sbp = 0;
 
    OptionsParser args(argc, argv);
    args.AddOption(&mesh_file, "-m", "--mesh",
@@ -66,6 +67,9 @@ int main(int argc, char *argv[])
    args.AddOption(&visualization, "-vis", "--visualization", "-no-vis",
                   "--no-visualization",
                   "Enable or disable GLVis visualization.");
+   args.AddOption(&sbp, "-sbp", "--summationbyparts", "-no-sbp",
+                  "--no-summationbyparts",
+                  "Enable or disable use of SBP operators.");
    args.Parse();
    if (!args.Good())
    {
@@ -86,7 +90,7 @@ int main(int argc, char *argv[])
    //    elements.
    {
       int ref_levels =
-         (int)floor(log(50000./mesh->GetNE())/log(2.)/dim);
+         (int)floor(log(5000./mesh->GetNE())/log(2.)/dim);
       for (int l = 0; l < ref_levels; l++)
       {
          mesh->UniformRefinement();
@@ -97,7 +101,11 @@ int main(int argc, char *argv[])
    //    Lagrange finite elements of the specified order. If order < 1, we
    //    instead use an isoparametric/isogeometric space.
    FiniteElementCollection *fec;
-   if (order > 0)
+   if (sbp)
+   {
+      fec = new H1_SBPCollection(order, dim);
+   }
+   else if (order > 0)
    {
       fec = new H1_FECollection(order, dim);
    }
@@ -118,6 +126,7 @@ int main(int argc, char *argv[])
    //    In this example, the boundary conditions are defined by marking all
    //    the boundary attributes from the mesh as essential (Dirichlet) and
    //    converting them to a list of true dofs.
+   cout << "Just above boundary\n";
    Array<int> ess_tdof_list;
    if (mesh->bdr_attributes.Size())
    {
@@ -125,6 +134,7 @@ int main(int argc, char *argv[])
       ess_bdr = 1;
       fespace->GetEssentialTrueDofs(ess_bdr, ess_tdof_list);
    }
+   cout << "below boundary\n";
 
    // 6. Set up the linear form b(.) which corresponds to the right-hand side of
    //    the FEM linear system, which in this case is (1,phi_i) where phi_i are
@@ -132,7 +142,9 @@ int main(int argc, char *argv[])
    LinearForm *b = new LinearForm(fespace);
    ConstantCoefficient one(1.0);
    b->AddDomainIntegrator(new DomainLFIntegrator(one));
+   mfem::out << "above assemble\n";
    b->Assemble();
+   cout << "below linear form\n";
 
    // 7. Define the solution vector x as a finite element grid function
    //    corresponding to fespace. Initialize x with initial guess of zero,
@@ -193,6 +205,7 @@ int main(int argc, char *argv[])
       sol_sock.precision(8);
       sol_sock << "solution\n" << *mesh << x << flush;
    }
+   cout << "order: " << order << "\n";
 
    // 14. Free the used memory.
    delete a;
