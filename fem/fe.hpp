@@ -154,6 +154,7 @@ protected:
 #endif
 
 public:
+   int OperatorType;
    /// Enumeration for RangeType and DerivRangeType
    enum { SCALAR, VECTOR };
 
@@ -196,6 +197,15 @@ public:
           GRAD, ///< Implements CalcDShape methods
           DIV,  ///< Implements CalcDivShape methods
           CURL  ///< Implements CalcCurlShape methods
+        };
+
+   /** @brief Enumeration for Operator Type: defines which integration rules
+       should be called.
+    
+   */
+
+   enum { FE = 0, ///< Traditional Finite Element
+          SBP = 1 ///< SBP Ellement with collocated integration rule
         };
 
    /** Construct FiniteElement with given
@@ -2817,6 +2827,38 @@ public:
    virtual void CalcShape(const IntegrationPoint &ip, Vector &shape) const;
    virtual void CalcDShape(const IntegrationPoint &ip,
                            DenseMatrix &dshape) const;
+};
+
+class H1_SBPTriangleElement : public NodalFiniteElement
+{
+private:
+#ifndef MFEM_THREAD_SAFE
+   mutable Vector shape_x, shape_y, shape_l, dshape_x, dshape_y, dshape_l, u;
+   mutable Vector ddshape_x, ddshape_y, ddshape_l;
+   mutable DenseMatrix du, ddu;
+#endif
+   DenseMatrix *Dx, *Dy;
+   DenseMatrixInverse Ti;
+   
+   // double p0Dx[9];
+   // double p0Dy[9];
+   // double p1Dx[49];
+   // double p1Dy[49];
+   // double p2Dx[144];
+   // double p2Dy[144];
+   // double p3Dx[324];
+   // double p3Dy[324];
+   // double p4Dx[729];
+   // double p4Dy[729];
+
+public:
+   // H1_SBPTriangleElement(const int p, const int btype = BasisType::GaussLobatto);
+   H1_SBPTriangleElement(const int p, const int Do);
+   virtual void CalcShape(const IntegrationPoint &ip, Vector &shape) const;
+   virtual void CalcDShape(const IntegrationPoint &ip,
+                           DenseMatrix &dshape) const;
+   // virtual void CalcHessian(const IntegrationPoint &ip,
+                           //  DenseMatrix &ddshape) const;
 };
 
 } // namespace mfem
