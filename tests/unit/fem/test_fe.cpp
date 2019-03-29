@@ -111,3 +111,27 @@ TEST_CASE("L2 Hexahedron Finite Element",
       REQUIRE( fe.GetDerivMapType()   == (int) FiniteElement::H_CURL );
    }
 }
+TEST_CASE("H1 Triangle SBP Operator",
+          "[H1_SBPTriangle]"
+          "[NodalFiniteElement]"
+          "[ScalarFiniteElement]"
+          "[FiniteElement]")
+{
+   int p = 1;
+
+   H1_SBPTriangleElement fe(p, 7);
+
+   SECTION("Attributes")
+   {
+      REQUIRE( fe.GetDim()            == 2                     );
+      REQUIRE( fe.GetGeomType()       == Geometry::TRIANGLE    );
+      REQUIRE( fe.GetDof()            == 7                     );
+      REQUIRE( fe.GetOrder()          == p                     );
+      REQUIRE( fe.Space()             == (int) FunctionSpace::Pk     );
+      REQUIRE( fe.GetRangeType()      == (int) FiniteElement::SCALAR );
+      REQUIRE( fe.GetMapType()        == (int) FiniteElement::VALUE  );
+      REQUIRE( fe.GetDerivType()      == (int) FiniteElement::GRAD   );
+      REQUIRE( fe.GetDerivRangeType() == (int) FiniteElement::VECTOR );
+      REQUIRE( fe.GetDerivMapType()   == (int) FiniteElement::H_CURL );
+   }
+}
