@@ -907,6 +907,30 @@ const IntegrationRule &IntegrationRules::Get(int GeomType, int Order)
    return *(*ir_array)[Order];
 }
 
+const IntegrationRule &IntegrationRules::Get(const FiniteElement &el, int Order)
+{
+   // mfem::out << "Operator Type: " << el.OperatorType << "\n";
+   const IntegrationRule *ir;
+   switch (el.OperatorType)
+   {
+      case 0: // FE
+         ir = &Get(el.GetGeomType(), Order);
+         break;
+      case 1: // SBP
+         ir = &el.GetNodes(); // SBP type elements have collocated quadrature
+                               // notes and DOFs, weights are included in 
+                               // element construction so complete integration
+                               // rule is defined by the element's `Nodes`
+
+         break;
+      default:
+         MFEM_ABORT("Invalid OperatorType = " << el.OperatorType);
+         // mfem_error("Only FE and SBP OperatorTypes are supported");
+         break;
+   }
+   return *ir;
+}
+
 void IntegrationRules::Set(int GeomType, int Order, IntegrationRule &IntRule)
 {
    Array<IntegrationRule *> *ir_array;
