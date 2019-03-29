@@ -400,7 +400,8 @@ void DiffusionIntegrator::AssembleElementMatrix
       }
       else
       {
-         ir = &IntRules.Get(el.GetGeomType(), order);
+         // ir = &IntRules.Get(el.GetGeomType(), order);
+         ir = &IntRules.Get(el, order);
       }
    }
 
