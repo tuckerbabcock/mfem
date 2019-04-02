@@ -50,7 +50,8 @@ using namespace mfem;
 int main(int argc, char *argv[])
 {
    // 1. Parse command-line options.
-   const char *mesh_file = "../data/star.mesh";
+   // const char *mesh_file = "../data/star.mesh";
+   const char *mesh_file = "../data/unitGridTestMesh.msh";
    int order = 1;
    bool static_cond = false;
    bool visualization = 1;
@@ -192,9 +193,16 @@ int main(int argc, char *argv[])
    ofstream mesh_ofs("refined.mesh");
    mesh_ofs.precision(8);
    mesh->Print(mesh_ofs);
+   // mesh->PrintVTK(mesh_ofs); 
    ofstream sol_ofs("sol.gf");
    sol_ofs.precision(8);
    x.Save(sol_ofs);
+
+   // const char mesh_file[] = "ex1_sol.vtk"; 
+   ofstream omesh("ex1_sol.vtk"); 
+   omesh.precision(14); 
+   mesh->PrintVTK(omesh, 0); 
+   x.SaveVTK(omesh, "sol", 0);
 
    // 13. Send the solution by socket to a GLVis server.
    if (visualization)

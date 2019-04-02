@@ -1264,6 +1264,7 @@ void FiniteElementSpace::GetElementDofs (int i, Array<int> &dofs) const
       nv = fec->DofForGeometry(Geometry::POINT);
       ne = (dim > 1) ? ( fec->DofForGeometry(Geometry::SEGMENT) ) : ( 0 );
       nb = (dim > 0) ? fec->DofForGeometry(mesh->GetElementBaseGeometry(i)) : 0;
+      mfem::out << "nv, ne, nb: " << nv << ", " << ne << ", " << nb << "\n";
       if (nv > 0)
       {
          mesh->GetElementVertices(i, V);

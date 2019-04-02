@@ -910,7 +910,7 @@ const IntegrationRule &IntegrationRules::Get(int GeomType, int Order)
 const IntegrationRule &IntegrationRules::Get(const FiniteElement &el, int Order)
 {
    // mfem::out << "Operator Type: " << el.OperatorType << "\n";
-   const IntegrationRule *ir;
+   const IntegrationRule *ir = NULL;
    switch (el.OperatorType)
    {
       case 0: // FE

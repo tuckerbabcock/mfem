@@ -328,6 +328,8 @@ void BilinearForm::Assemble (int skip_zeros)
                dbfi[k]->AssembleElementMatrix(fe, *eltrans, elemmat);
                elmat += elemmat;
             }
+            // mfem::out << "element " << i << "'s matrix:\n";
+            // elmat.Print();
             elmat_p = &elmat;
          }
          if (static_cond)
@@ -336,6 +338,8 @@ void BilinearForm::Assemble (int skip_zeros)
          }
          else
          {
+            mfem::out << "vdofs vector:\n";
+            vdofs.Print(mfem::out, width = 10);
             mat->AddSubMatrix(vdofs, vdofs, *elmat_p, skip_zeros);
             if (hybridization)
             {

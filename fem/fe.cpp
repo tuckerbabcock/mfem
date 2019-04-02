@@ -11856,8 +11856,8 @@ H1_SBPTriangleElement::H1_SBPTriangleElement(const int p, const int Do)
    */
 
    OperatorType = SBP;
-   // Dx = new DenseMatrix(Dof);
-   // Dy = new DenseMatrix(Dof);
+   Dx = new DenseMatrix(Dof);
+   Dy = new DenseMatrix(Dof);
 
    // p1Dx = {
       
@@ -11887,10 +11887,10 @@ H1_SBPTriangleElement::H1_SBPTriangleElement(const int p, const int Do)
    */
    // DenseMatrix Dx(Dof);
    // DenseMatrix Dy(Dof);
-   double p0Dx[9] = {-0.9999999999999984,-1.000000000000001,-0.9999999999999988,
+   const double p0Dx[9] = {-0.9999999999999984,-1.000000000000001,-0.9999999999999988,
          1.000000000000001,0.9999999999999974,0.9999999999999994,
          1.3322676295501878e-15,-1.9984014443252818e-15,9.992007221626409e-16};
-   double p0Dy[9] = {-0.9999999999999974,-0.9999999999999994,-1.0000000000000009,
+   const double p0Dy[9] = {-0.9999999999999974,-0.9999999999999994,-1.0000000000000009,
          1.9984014443252818e-15,-9.992007221626409e-16,-1.7486012637846216e-15,
          1.0000000000000009,0.9999999999999991,0.9999999999999984};
    double p1Dx[49] = {-3.333333333333333, 0.21647921352995003, 0.10823960676497299, -0.8824293926518367, 0.7863909022744312, -0.051249687578105226, -0.362809297675581,
@@ -12030,10 +12030,12 @@ H1_SBPTriangleElement::H1_SBPTriangleElement(const int p, const int Do)
    switch (p)
    {
       case 0:
-         Dx = new DenseMatrix(p0Dx, Dof, Dof);
-         Dy = new DenseMatrix(p0Dy, Dof, Dof);
-         // Dx = p0Dx;
-         // Dy = p0Dy;
+         // Dx = new DenseMatrix(p0Dx, Dof, Dof);
+         // Dy = new DenseMatrix(p0Dy, Dof, Dof);
+         Dx->operator=(p0Dx); //= p0Dx;
+         Dy->operator=(p0Dy); // = p0Dy;
+         // Dx->Print();
+
          Nodes.IntPoint(0).Set2w(0.0, 0.0, 0.16666666666666666);
          Nodes.IntPoint(1).Set2w(1.0, 0.0, 0.16666666666666666);
          Nodes.IntPoint(2).Set2w(0.0, 1.0, 0.16666666666666666);
@@ -12222,6 +12224,9 @@ void H1_SBPTriangleElement::CalcDShape(const IntegrationPoint &ip,
 {
    // const int p = Order;
    int ipNum;
+   dshape = 0.0;
+
+   // Dx->Print();
 
    for (int i = 0; i < Dof; i++)
    {
@@ -12235,8 +12240,10 @@ void H1_SBPTriangleElement::CalcDShape(const IntegrationPoint &ip,
    {
       // dshape(i,0) = *Dx(ipNum, i);
       // dshape(i,1) = *Dy(ipNum, i);
-      dshape(i,0) = Dx->Elem(i, ipNum);
-      dshape(i,1) = Dy->Elem(i, ipNum);
+      // dshape(i,0) = Dx->Elem(i, ipNum);
+      // dshape(i,1) = Dy->Elem(i, ipNum);
+      dshape(i,0) = Dx->Elem(ipNum, i);
+      dshape(i,1) = Dy->Elem(ipNum, i);
    }
 
 

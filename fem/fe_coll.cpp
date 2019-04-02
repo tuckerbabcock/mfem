@@ -274,9 +274,12 @@ FiniteElementCollection *FiniteElementCollection::New(const char *name)
          fec = new NURBSFECollection();
       }
    }
-   else if (!strncmp(name, "H1_SBP", 6))
+   else if (!strncmp(name, "SBP_", 4))
    {
-      fec = new H1_SBPCollection(atoi(name+9), atoi(name+6));
+      // mfem::out << name << "\n";
+      // mfem::out << atoi(name+8) << "\n";
+      fec = new H1_SBPCollection(atoi(name+8), atoi(name+4));
+      // mfem::out << fec->Name() << "\n";
    }
    else
    {
@@ -2582,7 +2585,7 @@ H1_SBPCollection::H1_SBPCollection(const int p, const int dim)
       }
    }
    */
-   snprintf(h1_SBPname, 32, "H1_SBP%dD_P%d", dim, p);
+   snprintf(h1_SBPname, 32, "SBP_%dD_P%d", dim, p);
 
    for (int g = 0; g < Geometry::NumGeom; g++)
    {
@@ -2606,23 +2609,24 @@ H1_SBPCollection::H1_SBPCollection(const int p, const int dim)
    }
    */
 
-   /* don't think I need points
+   // /* don't think I need points
    H1_SBPdof[Geometry::POINT] = 1;
-   H1_SBPElements[Geometry::POINT] = new PointFiniteElement;
-   */
+   // H1_SBPElements[Geometry::POINT] = new PointFiniteElement;
+   // */
 
    // currently only have dim == 2
    if (dim >= 1)
    {
-      // H1_dof[Geometry::SEGMENT] = pm1;
+      H1_SBPdof[Geometry::SEGMENT] = p;
       // if (b_type == BasisType::Positive)
       // {
       //    H1_Elements[Geometry::SEGMENT] = new H1Pos_SegmentElement(p);
       // }
       // else
       // {
-      //    H1_Elements[Geometry::SEGMENT] = new H1_SegmentElement(p, btype);
+      //    H1_SBPElements[Geometry::SEGMENT] = new H1_SegmentElement(p+1);
       // }
+      // /*
       int nodeOrder0[2] = {0, 1};
       int nodeOrder1[3] = {0, 2, 1};
       int nodeOrder2[4] = {0, 2, 3, 1};
@@ -2681,8 +2685,9 @@ H1_SBPCollection::H1_SBPCollection(const int p, const int dim)
             break;
 
       }
+      // */
    
-
+      // const int pm1 = p+2, pm2 = p+1;
       // SegDofOrd[0] = new int[2*pm1];
       // SegDofOrd[1] = SegDofOrd[0] + pm1;
       // for (int i = 0; i < pm1; i++)
@@ -2698,19 +2703,19 @@ H1_SBPCollection::H1_SBPCollection(const int p, const int dim)
       switch (p)
       {
          case 0:
-            H1_SBPdof[Geometry::TRIANGLE] = 3;
+            H1_SBPdof[Geometry::TRIANGLE] = 3 - 3 - 3*p;
             break;
          case 1:
-            H1_SBPdof[Geometry::TRIANGLE] = 7;
+            H1_SBPdof[Geometry::TRIANGLE] = 7 - 3 - 3*p;
             break;
          case 2:
-            H1_SBPdof[Geometry::TRIANGLE] = 12;
+            H1_SBPdof[Geometry::TRIANGLE] = 12 - 3 - 3*p;
             break;
          case 3:
-            H1_SBPdof[Geometry::TRIANGLE] = 18;
+            H1_SBPdof[Geometry::TRIANGLE] = 18 - 3 - 3*p;
             break;
          case 4:
-            H1_SBPdof[Geometry::TRIANGLE] = 27;
+            H1_SBPdof[Geometry::TRIANGLE] = 27 - 3 - 3*p;
             break;
          default:
             mfem_error("SBP elements are currently only supported for 0 <= order <= 4");
@@ -2730,7 +2735,7 @@ H1_SBPCollection::H1_SBPCollection(const int p, const int dim)
          H1_Elements[Geometry::SQUARE] = new H1_QuadrilateralElement(p, btype);
       }
       */
-      const int &TriDof = H1_SBPdof[Geometry::TRIANGLE];
+      const int &TriDof = H1_SBPdof[Geometry::TRIANGLE] + 3*H1_SBPdof[Geometry::POINT] + 3*H1_SBPdof[Geometry::SEGMENT];
 
       H1_SBPElements[Geometry::TRIANGLE] = new H1_SBPTriangleElement(p, TriDof);
 

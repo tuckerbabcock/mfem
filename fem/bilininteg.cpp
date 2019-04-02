@@ -408,14 +408,19 @@ void DiffusionIntegrator::AssembleElementMatrix
    elmat = 0.0;
    for (int i = 0; i < ir->GetNPoints(); i++)
    {
+      // mfem::out << "i: " << i << "\n";
       const IntegrationPoint &ip = ir->IntPoint(i);
       el.CalcDShape(ip, dshape);
-
+      // dshape.Print();
       Trans.SetIntPoint(&ip);
       w = Trans.Weight();
+      // mfem::out << "Trans weight: " << w << "\n";
       w = ip.weight / (square ? w : w*w*w);
+      // mfem::out << "Integration weight divided by trans weight: " << w << "\n";
       // AdjugateJacobian = / adj(J),         if J is square
       //                    \ adj(J^t.J).J^t, otherwise
+      // mfem::out << "Trans Jacobian:\n";
+      // Trans.AdjugateJacobian().Print();
       Mult(dshape, Trans.AdjugateJacobian(), dshapedxt);
       if (!MQ)
       {
@@ -433,6 +438,8 @@ void DiffusionIntegrator::AssembleElementMatrix
          AddMultABt(dshape, dshapedxt, elmat);
       }
    }
+   // mfem::out << "element matrix:\n";
+   // elmat.Print();
 }
 
 void DiffusionIntegrator::AssembleElementMatrix2(
