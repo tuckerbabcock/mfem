@@ -2859,6 +2859,7 @@ public:
                            DenseMatrix &dshape) const;
    // virtual void CalcHessian(const IntegrationPoint &ip,
                            //  DenseMatrix &ddshape) const;
+   virtual ~H1_SBPTriangleElement();
 };
 
 } // namespace mfem
