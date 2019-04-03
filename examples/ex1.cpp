@@ -89,14 +89,14 @@ int main(int argc, char *argv[])
    //    'ref_levels' of uniform refinement. We choose 'ref_levels' to be the
    //    largest number that gives a final mesh with no more than 50,000
    //    elements.
-   {
-      int ref_levels =
-         (int)floor(log(5000./mesh->GetNE())/log(2.)/dim);
-      for (int l = 0; l < ref_levels; l++)
-      {
-         mesh->UniformRefinement();
-      }
-   }
+   // {
+   //    int ref_levels =
+   //       (int)floor(log(5000./mesh->GetNE())/log(2.)/dim);
+   //    for (int l = 0; l < ref_levels; l++)
+   //    {
+   //       mesh->UniformRefinement();
+   //    }
+   // }
 
    // 4. Define a finite element space on the mesh. Here we use continuous
    //    Lagrange finite elements of the specified order. If order < 1, we
@@ -198,8 +198,17 @@ int main(int argc, char *argv[])
    sol_ofs.precision(8);
    x.Save(sol_ofs);
 
-   // const char mesh_file[] = "ex1_sol.vtk"; 
-   ofstream omesh("ex1_sol.vtk"); 
+   char solFileName[32];
+   if (sbp)
+   {
+      snprintf(solFileName, 32, "ex1_SBP_P%d.vtk", order+1);
+   }
+   else
+   {
+      snprintf(solFileName, 32, "ex1_FE_P%d.vtk", order);
+   }
+
+   ofstream omesh(solFileName);
    omesh.precision(14); 
    mesh->PrintVTK(omesh, 0); 
    x.SaveVTK(omesh, "sol", 0);
