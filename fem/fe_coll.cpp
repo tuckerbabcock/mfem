@@ -2627,57 +2627,69 @@ H1_SBPCollection::H1_SBPCollection(const int p, const int dim)
       //    H1_SBPElements[Geometry::SEGMENT] = new H1_SegmentElement(p+1);
       // }
       // /*
-      int nodeOrder0[2] = {0, 1};
-      int nodeOrder1[3] = {0, 2, 1};
-      int nodeOrder2[4] = {0, 2, 3, 1};
-      int nodeOrder3[5] = {0, 2, 4, 3, 1};
-      int nodeOrder4[6] = {0, 2, 4, 5, 3, 1};
+      // int nodeOrder0[2] = {0, 1};
+      // int nodeOrder1[3] = {0, 2, 1};
+      // int nodeOrder2[4] = {0, 2, 3, 1};
+      // int nodeOrder3[5] = {0, 2, 4, 3, 1};
+      // int nodeOrder4[6] = {0, 2, 4, 5, 3, 1};
+
+      int nodeOrder0[] = {};
+      int nodeOrder1[1] = {0};
+      int nodeOrder2[2] = {0, 1};
+      int nodeOrder3[3] = {0, 2, 1};
+      int nodeOrder4[4] = {0, 2, 3, 1};
+
+      int revNodeOrder0[] = {};
+      int revNodeOrder1[1] = {0};
+      int revNodeOrder2[2] = {1, 0};
+      int revNodeOrder3[3] = {1, 2, 0};
+      int revNodeOrder4[4] = {1, 3, 2, 0};
 
       switch (p)
       {
          case 0:
-            SegDofOrd[0] = new int[p+2];
-            SegDofOrd[1] = new int[p+2];
-            for (int i = 0; i < p+2; i++)
+            SegDofOrd[0] = new int[p];
+            SegDofOrd[1] = new int[p];
+            for (int i = 0; i < p; i++)
             {
                SegDofOrd[0][i] = nodeOrder0[i];
-               SegDofOrd[1][i] = nodeOrder0[p+1-i];
+               SegDofOrd[1][i] = revNodeOrder0[i];
             }
             break;
          case 1:
-            SegDofOrd[0] = new int[p+2];
-            SegDofOrd[1] = new int[p+2];
-            for (int i = 0; i < p+2; i++)
+            SegDofOrd[0] = new int[p];
+            SegDofOrd[1] = new int[p];
+            for (int i = 0; i < p; i++)
             {
                SegDofOrd[0][i] = nodeOrder1[i];
-               SegDofOrd[1][i] = nodeOrder1[p+1-i];
+               SegDofOrd[1][i] = revNodeOrder1[i];
             }
             break;
          case 2:
-            SegDofOrd[0] = new int[p+2];
-            SegDofOrd[1] = new int[p+2];
-            for (int i = 0; i < p+2; i++)
+            SegDofOrd[0] = new int[p];
+            SegDofOrd[1] = new int[p];
+            for (int i = 0; i < p; i++)
             {
                SegDofOrd[0][i] = nodeOrder2[i];
-               SegDofOrd[1][i] = nodeOrder2[p+1-i];
+               SegDofOrd[1][i] = revNodeOrder2[i];
             }
             break;
          case 3:
-            SegDofOrd[0] = new int[p+2];
-            SegDofOrd[1] = new int[p+2];
-            for (int i = 0; i < p+2; i++)
+            SegDofOrd[0] = new int[p];
+            SegDofOrd[1] = new int[p];
+            for (int i = 0; i < p; i++)
             {
                SegDofOrd[0][i] = nodeOrder3[i];
-               SegDofOrd[1][i] = nodeOrder3[p+1-i];
+               SegDofOrd[1][i] = revNodeOrder3[i];
             }
             break;
          case 4:
-            SegDofOrd[0] = new int[p+2];
-            SegDofOrd[1] = new int[p+2];
-            for (int i = 0; i < p+2; i++)
+            SegDofOrd[0] = new int[p];
+            SegDofOrd[1] = new int[p];
+            for (int i = 0; i < p; i++)
             {
                SegDofOrd[0][i] = nodeOrder4[i];
-               SegDofOrd[1][i] = nodeOrder4[p+1-i];
+               SegDofOrd[1][i] = revNodeOrder4[i];
             }
             break;
          default:
@@ -2688,6 +2700,7 @@ H1_SBPCollection::H1_SBPCollection(const int p, const int dim)
       // */
    
       // const int pm1 = p+2, pm2 = p+1;
+      // const int pm1 = p, pm2 = pm1 - 1, pm3 = pm2 - 1;
       // SegDofOrd[0] = new int[2*pm1];
       // SegDofOrd[1] = SegDofOrd[0] + pm1;
       // for (int i = 0; i < pm1; i++)
