@@ -285,11 +285,11 @@ void FiniteElementSpace::BuildDofToArrays()
 
 static void mark_dofs(const Array<int> &dofs, Array<int> &mark_array)
 {
-   mfem::out << "# dofs: " << dofs.Size() << "\n";
+   // mfem::out << "# dofs: " << dofs.Size() << "\n";
    for (int i = 0; i < dofs.Size(); i++)
    {
       int k = dofs[i];
-      mfem::out << "k: " << k << "\n";
+      // mfem::out << "k: " << k << "\n";
       if (k < 0) { k = -1 - k; }
       mark_array[k] = -1;
    }
@@ -300,10 +300,10 @@ void FiniteElementSpace::GetEssentialVDofs(const Array<int> &bdr_attr_is_ess,
                                            int component) const
 {
    Array<int> vdofs, dofs;
-   mfem::out << "V size(): " << GetVSize() << "\n";
+   // mfem::out << "V size(): " << GetVSize() << "\n";
    ess_vdofs.SetSize(GetVSize());
    ess_vdofs = 0;
-   mfem::out << "num boundary elem: " << GetNBE() << "\n";
+   // mfem::out << "num boundary elem: " << GetNBE() << "\n";
    for (int i = 0; i < GetNBE(); i++)
    {
       // mfem::out << "above if line 307, i = " << i << " \n";
@@ -378,24 +378,24 @@ void FiniteElementSpace::GetEssentialTrueDofs(const Array<int> &bdr_attr_is_ess,
                                               Array<int> &ess_tdof_list,
                                               int component)
 {
-   mfem::out << "top of func\n";
+   // mfem::out << "top of func\n";
    Array<int> ess_vdofs, ess_tdofs;
-   mfem::out << "above get essentialvdofs\n";
+   // mfem::out << "above get essentialvdofs\n";
    GetEssentialVDofs(bdr_attr_is_ess, ess_vdofs, component);
-   mfem::out << "get essential v dofs\n";
+   // mfem::out << "get essential v dofs\n";
    const SparseMatrix *R = GetConformingRestriction();
    if (!R)
    {
       ess_tdofs.MakeRef(ess_vdofs);
-      mfem::out << "makeref\n";
+      // mfem::out << "makeref\n";
    }
    else
    {
       R->BooleanMult(ess_vdofs, ess_tdofs);
-      mfem::out << "booleanMult\n";
+      // mfem::out << "booleanMult\n";
    }
    MarkerToList(ess_tdofs, ess_tdof_list);
-   mfem::out << "bottom of get essential true dofs\n";
+   // mfem::out << "bottom of get essential true dofs\n";
 }
 
 // static method
@@ -1282,7 +1282,7 @@ void FiniteElementSpace::GetElementDofs (int i, Array<int> &dofs) const
       nv = fec->DofForGeometry(Geometry::POINT);
       ne = (dim > 1) ? ( fec->DofForGeometry(Geometry::SEGMENT) ) : ( 0 );
       nb = (dim > 0) ? fec->DofForGeometry(mesh->GetElementBaseGeometry(i)) : 0;
-      mfem::out << "nv, ne, nb: " << nv << ", " << ne << ", " << nb << "\n";
+      // mfem::out << "nv, ne, nb: " << nv << ", " << ne << ", " << nb << "\n";
       if (nv > 0)
       {
          mesh->GetElementVertices(i, V);
@@ -1406,7 +1406,7 @@ void FiniteElementSpace::GetBdrElementDofs(int i, Array<int> &dofs) const
          mesh->GetBdrElementEdges(i, E, Eo);
       }
       nd = V.Size() * nv + E.Size() * ne;
-      mfem::out << "nv, ne, nd: " << nv << ", " << ne << ", " << nd << "\n";
+      // mfem::out << "nv, ne, nd: " << nv << ", " << ne << ", " << nd << "\n";
       nf = (dim == 3) ? (fec->DofForGeometry(
                             mesh->GetBdrElementBaseGeometry(i))) : (0);
       if (nf > 0)
@@ -1432,11 +1432,11 @@ void FiniteElementSpace::GetBdrElementDofs(int i, Array<int> &dofs) const
          for (k = 0; k < E.Size(); k++)
          {
             ind = fec->DofOrderForOrientation(Geometry::SEGMENT, Eo[k]);
-            mfem::out << "dof order for orientation " << Eo[k] <<": ";
+            // mfem::out << "dof order for orientation " << Eo[k] <<": ";
             // seems like for negative orientation I get problems, doesn't return the correct vector
             for (j = 0; j < ne; j++)
             {
-               mfem::out << ind[j] << " ";
+               // mfem::out << ind[j] << " ";
                if (ind[j] < 0)
                {
                   dofs[nv+k*ne+j] = -1 - ( nvdofs+E[k]*ne+(-1-ind[j]) );
@@ -1446,10 +1446,10 @@ void FiniteElementSpace::GetBdrElementDofs(int i, Array<int> &dofs) const
                   dofs[nv+k*ne+j] = nvdofs+E[k]*ne+ind[j];
                }
             }
-            mfem::out << "\n";
+            // mfem::out << "\n";
          }
       }
-      dofs.Print();
+      // dofs.Print();
       if (nf > 0)
          // if (dim == 3)
       {

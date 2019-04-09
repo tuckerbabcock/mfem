@@ -338,8 +338,8 @@ void BilinearForm::Assemble (int skip_zeros)
          }
          else
          {
-            mfem::out << "vdofs vector:\n";
-            vdofs.Print(mfem::out, width = 10);
+            // mfem::out << "vdofs vector:\n";
+            // vdofs.Print(mfem::out, width = 10);
             mat->AddSubMatrix(vdofs, vdofs, *elmat_p, skip_zeros);
             if (hybridization)
             {
