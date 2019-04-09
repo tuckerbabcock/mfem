@@ -2611,7 +2611,7 @@ H1_SBPCollection::H1_SBPCollection(const int p, const int dim)
 
    // /* don't think I need points
    H1_SBPdof[Geometry::POINT] = 1;
-   // H1_SBPElements[Geometry::POINT] = new PointFiniteElement;
+   H1_SBPElements[Geometry::POINT] = new PointFiniteElement;
    // */
 
    // currently only have dim == 2
@@ -2624,7 +2624,7 @@ H1_SBPCollection::H1_SBPCollection(const int p, const int dim)
       // }
       // else
       // {
-      //    H1_SBPElements[Geometry::SEGMENT] = new H1_SegmentElement(p+1);
+         H1_SBPElements[Geometry::SEGMENT] = new H1_SegmentElement(p+1);
       // }
       // /*
       // int nodeOrder0[2] = {0, 1};
@@ -2830,7 +2830,11 @@ H1_SBPCollection::H1_SBPCollection(const int p, const int dim)
 const FiniteElement *H1_SBPCollection::FiniteElementForGeometry(
       Geometry::Type GeomType) const
 {
-   if (GeomType != Geometry::TRIANGLE)
+   if (GeomType == Geometry::TRIANGLE || GeomType == Geometry::SEGMENT || GeomType == Geometry::POINT)
+   {
+
+   }
+   else
    {
       MFEM_ABORT("Unsupported geometry type " << GeomType);
    }
