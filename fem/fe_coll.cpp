@@ -2636,13 +2636,17 @@ H1_SBPCollection::H1_SBPCollection(const int p, const int dim)
       int nodeOrder0[] = {};
       int nodeOrder1[1] = {0};
       int nodeOrder2[2] = {0, 1};
-      int nodeOrder3[3] = {0, 2, 1};
+      // int nodeOrder3[3] = {0, 2, 1};
+      int nodeOrder3[3] = {1, 0, 2};
+      // int nodeOrder4[4] = {0, 2, 3, 1};
       int nodeOrder4[4] = {0, 2, 3, 1};
 
       int revNodeOrder0[] = {};
       int revNodeOrder1[1] = {0};
       int revNodeOrder2[2] = {1, 0};
-      int revNodeOrder3[3] = {1, 2, 0};
+      // int revNodeOrder3[3] = {1, 2, 0};
+      int revNodeOrder3[3] = {2, 0, 1};
+      // int revNodeOrder4[4] = {1, 3, 2, 0};
       int revNodeOrder4[4] = {1, 3, 2, 0};
 
       switch (p)
@@ -2699,7 +2703,7 @@ H1_SBPCollection::H1_SBPCollection(const int p, const int dim)
       }
       // */
    
-      // const int pm1 = p+2, pm2 = p+1;
+      // // const int pm1 = p+2, pm2 = p+1;
       // const int pm1 = p, pm2 = pm1 - 1, pm3 = pm2 - 1;
       // SegDofOrd[0] = new int[2*pm1];
       // SegDofOrd[1] = SegDofOrd[0] + pm1;
