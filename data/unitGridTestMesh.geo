@@ -10,7 +10,7 @@
 // The simplest construction in Gmsh's scripting language is the
 // `affectation'. The following command defines a new variable `lc':
 
-lc = 1;
+lc = 0.1;
 
 // This variable can then be used in the definition of Gmsh's simplest
 // `elementary entity', a `Point'. A Point is defined by a list of four numbers:
@@ -32,7 +32,7 @@ Point(1) = {0, 0, 0, lc};
 
 Point(2) = {1, 0, 0, lc} ;
 Point(3) = {1, 1, 0, lc} ;
-Point(4) = {0, 1, 0, lc/2} ;
+Point(4) = {0, 1, 0, lc} ;
 
 Line(1) = {1,2} ;
 Line(2) = {2,3} ;
