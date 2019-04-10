@@ -255,12 +255,16 @@ int main(int argc, char *argv[])
 	char outfileName[32];
    if (problem == 1)
    {
-      snprintf(outfileName, 32, "convergenceOutputP%d_lin.txt", order);
+      snprintf(outfileName, 32, "convOutputP%d_lin.txt", order);
    }
-   else
+   else if (problem == 2)
    {
-      snprintf(outfileName, 32, "convergenceOutputP%d_quad.txt", order);
+      snprintf(outfileName, 32, "convOutputP%d_quad.txt", order);
    }
+	else if (problem == 3)
+	{
+		snprintf(outfileName, 32, "convOutputP%d_manufactured.txt", order);
+	}
 
 	ofstream outputFile;
 	outputFile.open(outfileName, ios::out | ios::app); 
