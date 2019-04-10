@@ -131,9 +131,12 @@ int main(int argc, char *argv[])
    Array<int> ess_tdof_list;
    if (mesh->bdr_attributes.Size())
    {
+      mfem::out << "in if\n";
       Array<int> ess_bdr(mesh->bdr_attributes.Max());
+      mfem::out << "below array\n";
       ess_bdr = 1;
       fespace->GetEssentialTrueDofs(ess_bdr, ess_tdof_list);
+      mfem::out << "bottom of if\n";
    }
    cout << "below boundary\n";
 
@@ -201,7 +204,7 @@ int main(int argc, char *argv[])
    char solFileName[32];
    if (sbp)
    {
-      snprintf(solFileName, 32, "ex1_SBP_P%d.vtk", order+1);
+      snprintf(solFileName, 32, "ex1_SBP_P%d.vtk", order);
    }
    else
    {
@@ -210,8 +213,8 @@ int main(int argc, char *argv[])
 
    ofstream omesh(solFileName);
    omesh.precision(14); 
-   mesh->PrintVTK(omesh, 0); 
-   x.SaveVTK(omesh, "sol", 0);
+   mesh->PrintVTK(omesh, 1); 
+   x.SaveVTK(omesh, "sol", 1);
 
    // 13. Send the solution by socket to a GLVis server.
    if (visualization)

@@ -51,17 +51,18 @@ int problem;
 
 // Prescribed time-independent boundary and right-hand side functions.
 double bdr_func(const Vector &pt);
+double rhs_func(const Vector &pt);
 
 int main(int argc, char *argv[])
 {
    // 1. Parse command-line options.
-   // const char *mesh_file = "../data/star.mesh";
    const char *mesh_file = "../data/unitGridTestMesh.msh";
    int order = 1;
    bool static_cond = false;
    bool visualization = 1;
    bool sbp = 0;
 	problem = 1;
+	int ref_levels = 0;
 
    OptionsParser args(argc, argv);
    args.AddOption(&mesh_file, "-m", "--mesh",
@@ -80,6 +81,8 @@ int main(int argc, char *argv[])
 	args.AddOption(&problem, "-p", "--problem",
                   "Problem setup to use: 0 = linear displacement, "
 						"2 == quadratic displacement.");
+	args.AddOption(&ref_levels, "-r", "--ref-levels",
+                  "Number of initial uniform refinement levels.");
    args.Parse();
    if (!args.Good())
    {
@@ -98,14 +101,14 @@ int main(int argc, char *argv[])
    //    'ref_levels' of uniform refinement. We choose 'ref_levels' to be the
    //    largest number that gives a final mesh with no more than 50,000
    //    elements.
-   // {
-   //    int ref_levels =
-   //       (int)floor(log(50000./mesh->GetNE())/log(2.)/dim);
-   //    for (int l = 0; l < ref_levels; l++)
-   //    {
-   //       mesh->UniformRefinement();
-   //    }
-   // }
+   {
+      // int ref_levels =
+         // (int)floor(log(50000./mesh->GetNE())/log(2.)/dim);
+      for (int l = 0; l < ref_levels; l++)
+      {
+         mesh->UniformRefinement();
+      }
+   }
 
    // 4. Define a finite element space on the mesh. Here we use continuous
    //    Lagrange finite elements of the specified order. If order < 1, we
@@ -154,22 +157,40 @@ int main(int argc, char *argv[])
       // mfem::out << "below array\n";
       ess_bdr = 1;
 
+		// Project boundary conditions onto grid function to strongly impose
+		// boundary conditions. BC's are defined in the function `bdr_func`.
 		x.ProjectBdrCoefficient(bdr, ess_bdr);
 
       fespace->GetEssentialTrueDofs(ess_bdr, ess_tdof_list);
-      // mfem::out << "bottom of if\n";
    }
-   // cout << "below boundary\n";
 
    // 6. Set up the linear form b(.) which corresponds to the right-hand side of
    //    the FEM linear system, which in this case is (1,phi_i) where phi_i are
    //    the basis functions in the finite element fespace.
    LinearForm *b = new LinearForm(fespace);
-   ConstantCoefficient zero(0.0);
-   b->AddDomainIntegrator(new DomainLFIntegrator(zero));
-   // mfem::out << "above assemble\n";
+	if (problem == 1)
+	{
+		ConstantCoefficient zero(0.0);
+		b->AddDomainIntegrator(new DomainLFIntegrator(zero));
+	}
+	else if (problem == 2)
+	{
+		ConstantCoefficient two(-2.0);
+		b->AddDomainIntegrator(new DomainLFIntegrator(two));
+	}
+	else if (problem == 3)
+	{
+		FunctionCoefficient rhs(rhs_func);
+		b->AddDomainIntegrator(new DomainLFIntegrator(rhs));
+	}
+	else
+	{
+		cout << "Invalid problem type\n";
+		delete mesh;
+      return 3;
+	}
+	
    b->Assemble();
-   // cout << "below linear form\n";
 
    // 8. Set up the bilinear form a(.,.) on the finite element space
    //    corresponding to the Laplacian operator -Delta, by adding the Diffusion
@@ -209,6 +230,7 @@ int main(int argc, char *argv[])
 
 	// 12. Compute and print the L^2 norm of the error.
    cout << "\n|| E_h - E ||_{L^2} = " << x.ComputeL2Error(bdr) << '\n' << endl;
+	cout << "h: " << 0.1 / (ref_levels + 1) << "\n";
 
    // 12. Save the refined mesh and the solution. This output can be viewed later
    //     using GLVis: "glvis -m refined.mesh -g sol.gf".
@@ -230,6 +252,25 @@ int main(int argc, char *argv[])
       snprintf(solFileName, 32, "exSBP_FE_P%d.vtk", order);
    }
 
+	char outfileName[32];
+   if (problem == 1)
+   {
+      snprintf(outfileName, 32, "convergenceOutputP%d_lin.txt", order);
+   }
+   else
+   {
+      snprintf(outfileName, 32, "convergenceOutputP%d_quad.txt", order);
+   }
+
+	ofstream outputFile;
+	outputFile.open(outfileName, ios::out | ios::app); 
+
+	if (outputFile.is_open())
+	{
+		outputFile << x.ComputeL2Error(bdr) << ", " << 0.1 / (ref_levels + 1) << "\n";
+	}
+	outputFile.close();
+
    ofstream omesh(solFileName);
    omesh.precision(14); 
    mesh->PrintVTK(omesh, 1); 
@@ -244,7 +285,7 @@ int main(int argc, char *argv[])
       sol_sock.precision(8);
       sol_sock << "solution\n" << *mesh << x << flush;
    }
-   cout << "order: " << order << "\n";
+   // cout << "order: " << order << "\n";
 
    // 14. Free the used memory.
    delete a;
@@ -261,60 +302,28 @@ double bdr_func(const Vector &pt)
 {
 	double x = pt(0), y = pt(1), z = 0.0;
 
-	if (problem == 1)
+	if (problem == 1) // linear displacement
 	{
 		z = 0.5*x + 0.5*y;
 	}
-	else if (problem == 2)
+	else if (problem == 2) // quadratic displacement
 	{
-		// mfem::out << "in problem 2\n";
-		z = x*x; // + 0.5*y*y;
+		z = 0.5*x*x + 0.5*y*y;
+	}
+	else if (problem == 3) // manufactured solution
+	{
+		z = sin(M_PI*x)*sin(M_PI*y);
 	}
 	return z;
-
-   // return composite_func(pt, t, front, ball);
 }
 
-// // Spherical front with a Gaussian cross section and radius t
-// double front(double x, double y, double z, double t, int)
-// {
-//    double r = sqrt(x*x + y*y + z*z);
-//    return exp(-0.5*pow((r - t)/alpha, 2));
-// }
-
-// double composite_func(const Vector &pt, double t, F0 f0, F1 f1)
-// {
-//    int dim = pt.Size();
-//    double x = pt(0), y = pt(1), z = 0.0;
-//    if (dim == 3) { z = pt(2); }
-
-//    if (problem == 0)
-//    {
-//       if (nfeatures <= 1)
-//       {
-//          return f0(x, y, z, t, dim);
-//       }
-//       else
-//       {
-//          double sum = 0.0;
-//          for (int i = 0; i < nfeatures; i++)
-//          {
-//             double x0 = 0.5*cos(2*M_PI * i / nfeatures);
-//             double y0 = 0.5*sin(2*M_PI * i / nfeatures);
-//             sum += f0(x - x0, y - y0, z, t, dim);
-//          }
-//          return sum;
-//       }
-//    }
-//    else
-//    {
-//       double sum = 0.0;
-//       for (int i = 0; i < nfeatures; i++)
-//       {
-//          double x0 = 0.5*cos(2*M_PI * i / nfeatures + M_PI*t);
-//          double y0 = 0.5*sin(2*M_PI * i / nfeatures + M_PI*t);
-//          sum += f1(x - x0, y - y0, z, 0.25, dim);
-//       }
-//       return sum;
-//    }
-// }
+// right hand side function for manufactured solution
+double rhs_func(const Vector &pt)
+{
+	double x = pt(0), y = pt(1), z = 0.0;
+	if (problem == 3)
+	{
+		z = 2*M_PI*M_PI*sin(M_PI*x)*sin(M_PI*y);
+	}
+	return z;
+}

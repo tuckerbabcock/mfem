@@ -103,6 +103,13 @@ ex11p-test-strumpack: ex11p
 test-par-YES: ex11p-test-strumpack
 endif
 
+results: exSBP
+	./exSBP -o $(order) -sbp -p $(prob) -r 0
+	./exSBP -o $(order) -sbp -p $(prob) -r 1 
+	./exSBP -o $(order) -sbp -p $(prob) -r 2 
+	./exSBP -o $(order) -sbp -p $(prob) -r 3 
+	./exSBP -o $(order) -sbp -p $(prob) -r 4 
+
 # Testing: "test" target and mfem-test* variables are defined in config/test.mk
 
 # Generate an error message if the MFEM library is not built and exit
