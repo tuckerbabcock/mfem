@@ -229,8 +229,8 @@ int main(int argc, char *argv[])
    a->RecoverFEMSolution(X, *b, x);
 
 	// 12. Compute and print the L^2 norm of the error.
-   cout << "\n|| E_h - E ||_{L^2} = " << x.ComputeL2Error(bdr) << '\n' << endl;
-	cout << "h: " << 0.1 / (ref_levels + 1) << "\n";
+   cout << "\n|| u_h - u ||_{L^2} = " << x.ComputeL2Error(bdr) << '\n' << endl;
+	cout << "h: " << 0.1 / pow(2, ref_levels) << "\n";
 
    // 12. Save the refined mesh and the solution. This output can be viewed later
    //     using GLVis: "glvis -m refined.mesh -g sol.gf".
@@ -271,7 +271,7 @@ int main(int argc, char *argv[])
 
 	if (outputFile.is_open())
 	{
-		outputFile << x.ComputeL2Error(bdr) << ", " << 0.1 / (ref_levels + 1) << "\n";
+		outputFile << x.ComputeL2Error(bdr) << ", " << 0.1 / pow(2, ref_levels) << "\n";
 	}
 	outputFile.close();
 
