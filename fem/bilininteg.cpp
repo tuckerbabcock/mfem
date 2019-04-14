@@ -960,6 +960,60 @@ void GroupConvectionIntegrator::AssembleElementMatrix(
    }
 }
 
+void VectorConvectionIntegrator::AssembleElementMatrix(
+   const FiniteElement &el, ElementTransformation &Trans, DenseMatrix &elmat)
+{
+   int ndof = el.GetDof();
+   int spaceDim = el.GetDim();
+
+#ifdef MFEM_THREAD_SAFE
+   DenseMatrix dshape, adjJ, VQ_ir, partelmat;
+   Vector shape, vec2, BdFidxT;
+#endif
+   elmat.SetSize(ndof*vdim);
+   dshape.SetSize(ndof,spaceDim);
+   adjJ.SetSize(spaceDim);
+   partelmat.SetSize(ndof);
+   shape.SetSize(ndof);
+   vec2.SetSize(spaceDim);
+   BdFidxT.SetSize(ndof);
+
+   Vector vec1;
+
+   const IntegrationRule *ir = IntRule;
+   if (ir == NULL)
+   {
+      int order = Trans.OrderGrad(&el) + Trans.Order() + el.GetOrder();
+      // ir = &IntRules.Get(el.GetGeomType(), order);
+      ir = &IntRules.Get(el, order); // New overload
+   }
+
+   VQ.Eval(VQ_ir, Trans, *ir);
+
+   elmat = 0.0;
+   for (int i = 0; i < ir->GetNPoints(); i++)
+   {
+      const IntegrationPoint &ip = ir->IntPoint(i);
+      el.CalcDShape(ip, dshape);
+      el.CalcShape(ip, shape);
+
+      Trans.SetIntPoint(&ip);
+      CalcAdjugate(Trans.Jacobian(), adjJ);
+      VQ_ir.GetColumnReference(i, vec1);
+      vec1 *= alpha * ip.weight;
+
+      adjJ.Mult(vec1, vec2);
+      dshape.Mult(vec2, BdFidxT);
+
+      AddMultVWt(shape, BdFidxT, partelmat);
+
+      for (int d = 0; d < vdim; d++)
+      {
+         elmat.AddMatrix(partelmat, ndof*d, ndof*d);
+      }
+   }
+}
+
 
 void VectorMassIntegrator::AssembleElementMatrix
 ( const FiniteElement &el, ElementTransformation &Trans,
@@ -972,6 +1026,7 @@ void VectorMassIntegrator::AssembleElementMatrix
 
    // If vdim is not set, set it to the space dimension
    vdim = (vdim == -1) ? spaceDim : vdim;
+   // mfem::out << "vdim: " << vdim << "\n";
 
    elmat.SetSize(nd*vdim);
    shape.SetSize(nd);

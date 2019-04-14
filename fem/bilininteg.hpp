@@ -1748,6 +1748,63 @@ public:
                                       DenseMatrix &);
 };
 
+/** Class for integrating the bilinear form a(u,v) := (q . grad u, v),
+    where u=(u1,...,un) and v=(v1,...,vn); ui and vi are defined
+    by scalar FE through standard transformation. */
+class VectorConvectionIntegrator: public BilinearFormIntegrator
+{
+private:
+   int vdim;
+   // Vector shape, te_shape, vec;
+   // DenseMatrix partelmat;
+   // DenseMatrix mcoeff;
+   // Coefficient *Q;
+   // VectorCoefficient *VQ;
+   // MatrixCoefficient *MQ;
+
+   // int Q_order;
+   #ifndef MFEM_THREAD_SAFE
+   DenseMatrix dshape, adjJ, VQ_ir, partelmat;
+   Vector shape, vec2, BdFidxT;
+#endif
+   VectorCoefficient &VQ;
+   double alpha;
+
+public:
+   // /// Construct an integrator with coefficient 1.0
+   // VectorConvectionIntegrator()
+   //    : vdim(-1), Q(NULL), VQ(NULL), MQ(NULL), Q_order(0) { }
+   // /** Construct an integrator with scalar coefficient q.
+   //     If possible, save memory by using a scalar integrator since
+   //     the resulting matrix is block diagonal with the same diagonal
+   //     block repeated. */
+   // VectorConvectionIntegrator(Coefficient &q, int qo = 0)
+   //    : vdim(-1), Q(&q) { VQ = NULL; MQ = NULL; Q_order = qo; }
+   // VectorConvectionIntegrator(Coefficient &q, const IntegrationRule *ir)
+   //    : BilinearFormIntegrator(ir), vdim(-1), Q(&q)
+   // { VQ = NULL; MQ = NULL; Q_order = 0; }
+   // /// Construct an integrator with diagonal coefficient q
+   // VectorConvectionIntegrator(VectorCoefficient &q, int qo = 0)
+   //    : vdim(q.GetVDim()), VQ(&q) { Q = NULL; MQ = NULL; Q_order = qo; }
+   // /// Construct an integrator with matrix coefficient q
+   // VectorConvectionIntegrator(MatrixCoefficient &q, int qo = 0)
+   //    : vdim(q.GetVDim()), MQ(&q) { Q = NULL; VQ = NULL; Q_order = qo; }
+   
+   VectorConvectionIntegrator(VectorCoefficient &q, int N, double a = 1.0)
+      : vdim(N), VQ(q) { alpha = a; }
+
+   int GetVDim() const { return vdim; }
+   void SetVDim(int vdim) { this->vdim = vdim; }
+
+   virtual void AssembleElementMatrix(const FiniteElement &el,
+                                      ElementTransformation &Trans,
+                                      DenseMatrix &elmat);
+   // virtual void AssembleElementMatrix2(const FiniteElement &trial_fe,
+   //                                     const FiniteElement &test_fe,
+   //                                     ElementTransformation &Trans,
+   //                                     DenseMatrix &elmat);
+};
+
 /** Class for integrating the bilinear form a(u,v) := (Q u, v),
     where u=(u1,...,un) and v=(v1,...,vn); ui and vi are defined
     by scalar FE through standard transformation. */
