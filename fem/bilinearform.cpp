@@ -326,8 +326,22 @@ void BilinearForm::Assemble (int skip_zeros)
             for (int k = 1; k < dbfi.Size(); k++)
             {
                dbfi[k]->AssembleElementMatrix(fe, *eltrans, elemmat);
+               // mfem::out << "above +=\n";
+               elmat.PrintMatlab(mfem::out);
+               elemmat.PrintMatlab(mfem::out);
                elmat += elemmat;
+               // mfem::out << "below +=";
             }
+            // mfem::out<<i<<"\n";
+            // for(int ii =0;ii<elmat.Size();ii++)
+            // {
+            //    for(int jj = 0; jj<elmat.Size();jj++)
+            //    {
+            //       mfem::out<< elmat(ii,jj) << " ";
+            //    }
+            //    mfem::out << "\n";
+            // }
+            // mfem::out<<"\n\n";
             // mfem::out << "element " << i << "'s matrix:\n";
             // elmat.Print();
             elmat_p = &elmat;

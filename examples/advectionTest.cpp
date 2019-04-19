@@ -49,7 +49,7 @@ using namespace std;
 using namespace mfem;
 
 int problem;
-double frequency;
+double omega;
 
 // Exact solution
 double u_exact(const double x, const double y, const double t);
@@ -67,20 +67,20 @@ void rhs_func(const Vector &X, Vector &V);
 void velocity_function(const Vector &x, Vector &v);
 
 // Function to compute the time spectral matrix operator
-void getTimeSpectralMatrix(const int N, const double w, DenseMatrix &Dt);
+// void getTimeSpectralMatrix(const int N, const double w, DenseMatrix &Dt);
 
 int main(int argc, char *argv[])
 {
    // 1. Parse command-line options.
-   const char *mesh_file = "../data/unitGridTestMesh.msh";
+   const char *mesh_file = "../data/unitGridTestMesh8.msh";
    int order = 1;
    bool static_cond = false;
    bool visualization = 1;
    bool sbp = 0;
 	problem = 1;
-	frequency = 1;
+	omega = 1;
 	int ref_levels = 0;
-	int N = 1; // number of time levels -- add option to be parsed
+	int N = 3; // number of time levels -- add option to be parsed
 
    OptionsParser args(argc, argv);
    args.AddOption(&mesh_file, "-m", "--mesh",
@@ -153,7 +153,7 @@ int main(int argc, char *argv[])
    {
       fec = new H1_FECollection(order = 1, dim);
    }
-   FiniteElementSpace *fespace = new FiniteElementSpace(mesh, fec, N);
+   FiniteElementSpace *fespace = new FiniteElementSpace(mesh, fec, N, Ordering::byNODES);
    cout << "Number of finite element unknowns: "
         << fespace->GetTrueVSize() << endl;
 
@@ -197,19 +197,21 @@ int main(int argc, char *argv[])
 	// Construct bilinear form associated with time spectral operator
    // BilinearForm *m = new BilinearForm(fespace);
 
-	DenseMatrix Dt(N);
-	getTimeSpectralMatrix(N, frequency, Dt);
+	// DenseMatrix Dt(N);
+	// getTimeSpectralMatrix(N, frequency, Dt);
 
-   Dt.Print();
-	MatrixConstantCoefficient DtCoeff(Dt);
+   // Dt.Print();
+	// MatrixConstantCoefficient DtCoeff(Dt);
 
-   mfem::out << "Dt Coeff vdim: " << DtCoeff.GetVDim() << "\n";
+   // mfem::out << "Dt Coeff vdim: " << DtCoeff.GetVDim() << "\n";
+
+   ConstantCoefficient one(1.0);
 
    // add domain integrator associated with time spectral operator
-   k->AddDomainIntegrator(new VectorMassIntegrator(DtCoeff));
+   k->AddDomainIntegrator(new TimeSpectralOperatorIntegrator(one, N, omega));
 
    // add domain integrator assosciated with advection discretization
-   k->AddDomainIntegrator(new VectorConvectionIntegrator(velocity, N, 1.0));
+   k->AddDomainIntegrator(new TimeSpectralConvectionIntegrator(velocity, N, 1.0));
    // k->AddDomainIntegrator(new ConvectionIntegrator(velocity, 1.0));
 
    // create linear form
@@ -346,11 +348,11 @@ void bdr_func(const Vector &X, Vector &V)
 	double x = X(0), y = X(1);
 	const int N = V.Size();
    // mfem::out << "N: " << N << "\n";
-	const double T = 2*M_PI/frequency;
-	const double dt = T / (N+1);
+	const double T = 2*M_PI/omega;
+	const double dt = T / (N);
 	for (int i = 0; i < N; i++)
 	{
-		double t = dt * (i+1);
+		double t = dt * (i);
       // mfem::out << "t: " << t << " T: " << T << "\n";
 		V(i) = u_exact(x, y, t);
 	}
@@ -359,24 +361,24 @@ void bdr_func(const Vector &X, Vector &V)
 // exact time domain solution
 double u_exact(const double x, const double y, const double t)
 {
-	double u = std::cos(x + y - frequency*t);
+	double u = std::cos(x + y - omega*t);
 	return u;
 }
 
 // exact derivates
 double u_t(const double x, const double y, const double t)
 {
-   double ut = frequency * std::sin(x + y - frequency*t);
+   double ut = omega * std::sin(x + y - omega*t);
    return ut;
 }
 double u_x(const double x, const double y, const double t)
 {
-   double ux =  -std::sin(x + y - frequency*t);
+   double ux =  -std::sin(x + y - omega*t);
    return ux;
 }
 double u_y(const double x, const double y, const double t)
 {
-   double uy = -std::sin(x + y - frequency*t);
+   double uy = -std::sin(x + y - omega*t);
    return uy;
 }
 
@@ -385,39 +387,39 @@ void rhs_func(const Vector &X, Vector &V)
 {
 	double x = X(0), y = X(1);
    const int N = V.Size();
-	const double T = 2*M_PI/frequency;
-	const double dt = T / (N+1);
+	const double T = 2*M_PI/omega;
+	const double dt = T / (N);
 	for (int i = 0; i < N; i++)
 	{
-		double t = dt * (i+1);
+		double t = dt * (i);
 		V(i) = u_t(x, y, t) + u_x(x, y, t) + u_y(x, y, t);
 	}
 }
 
 
-// constructs time spectal matrix Dt
-void getTimeSpectralMatrix(const int N, const double w, DenseMatrix &Dt)
-{
-    Dt = 0.0;
+// // constructs time spectal matrix Dt
+// void getTimeSpectralMatrix(const int N, const double w, DenseMatrix &Dt)
+// {
+//     Dt = 0.0;
 
-    for (int n = 0; n < N; n++)
-    {
-        for (int j = 0; j < N; j++)
-        {
-            if (j != n)
-            {
-                if (N % 2 == 0) // if N is even
-                {
-                    Dt(j,n) = 0.5*w*std::pow(-1,(n-j))*std::cos(M_PI*(n-j)/N) 
-                                / std::sin(M_PI*(n-j)/N); 
-                }
-                else
-                {
-                    Dt(j,n) = 0.5*w*std::pow(-1,(n-j)) 
-                                / std::sin(M_PI*(n-j)/N); 
-                }           
-            }
-        }
-    }
+//     for (int n = 0; n < N; n++)
+//     {
+//         for (int j = 0; j < N; j++)
+//         {
+//             if (j != n)
+//             {
+//                 if (N % 2 == 0) // if N is even
+//                 {
+//                     Dt(j,n) = 0.5*w*std::pow(-1,(n-j))*std::cos(M_PI*(n-j)/N) 
+//                                 / std::sin(M_PI*(n-j)/N); 
+//                 }
+//                 else
+//                 {
+//                     Dt(j,n) = 0.5*w*std::pow(-1,(n-j)) 
+//                                 / std::sin(M_PI*(n-j)/N); 
+//                 }           
+//             }
+//         }
+//     }
 
-}
+// }

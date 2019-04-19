@@ -139,8 +139,8 @@ int main(int argc, char *argv[])
    // 7. Define the solution vector x as a finite element grid function
    //    corresponding to fespace. Initialize x with initial guess of zero,
    //    which satisfies the boundary conditions.
-   GridFunction x(fespace);
-   x = 0.0;
+	GridFunction x(fespace);
+	x = 0.0;
 
 	FunctionCoefficient bdr(bdr_func);
 
