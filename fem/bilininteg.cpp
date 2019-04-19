@@ -126,6 +126,176 @@ SumIntegrator::~SumIntegrator()
    }
 }
 
+void TimeSpectralOperatorIntegrator::AssembleElementMatrix(
+   const FiniteElement &el, ElementTransformation &Trans, DenseMatrix &elmat)
+{
+   int ndof = el.GetDof();
+   // int spaceDim = el.GetDim();
+
+   elmat.SetSize(ndof*vdim);
+   partelmat.SetSize(ndof);
+   blockmassmat.SetSize(ndof*vdim);
+   Dtmat.SetSize(ndof*vdim);
+   dt.SetSize(vdim);
+
+
+   // ConvectionIntegrator convInt(VQ, alpha);
+   // convInt.AssembleElementMatrix(el, Trans, partelmat);
+   
+   // for (int d = 0; d < vdim; d++)
+   // {
+   //    elmat.AddMatrix(partelmat, ndof*d, ndof*d);
+   // }
+   // MassIntegrator(Coefficient &q, const IntegrationRule *ir = NULL)
+   //    : BilinearFormIntegrator(ir), Q(&q) { }
+
+
+   /// Construct block mass matrix M
+   MassIntegrator MassInt(*Q);
+   MassInt.AssembleElementMatrix(el, Trans, partelmat);
+   
+   for (int d = 0; d < vdim; d++)
+   {
+      blockmassmat.AddMatrix(partelmat, ndof*d, ndof*d);
+   }
+
+   /// Construct dense skew matrix Dt = kron(dt, eye(ndof))
+   getdt(vdim, omega, dt);
+
+   partelmat.Diag(1.0, ndof); // create identity matrix
+   kron(dt, partelmat, Dtmat);
+
+   Mult(blockmassmat, Dtmat, elmat);
+
+
+
+
+
+
+
+   
+   
+// #ifdef MFEM_THREAD_SAFE
+//    DenseMatrix dshape, adjJ, MQ_ir, partelmat;
+//    Vector shape, vec2, BdFidxT;
+//    DenseMatrix shapeMatrix;
+// #endif
+//    elmat.SetSize(ndof*vdim);
+//    // dshape.SetSize(ndof,spaceDim);
+//    adjJ.SetSize(spaceDim);
+//    partelmat.SetSize(ndof);
+//    shape.SetSize(ndof);
+//    vec2.SetSize(spaceDim);
+//    BdFidxT.SetSize(ndof);
+
+//    shapeMatrix.SetSize(vdim,vdim*ndof);
+
+//    Vector vec1;
+
+//    const IntegrationRule *ir = IntRule;
+//    if (ir == NULL)
+//    {
+//       int order = Trans.OrderGrad(&el) + Trans.Order() + el.GetOrder();
+//       // ir = &IntRules.Get(el.GetGeomType(), order);
+//       ir = &IntRules.Get(el, order); // New overload
+//    }
+
+//    elmat = 0.0;
+//    for (int i = 0; i < ir->GetNPoints(); i++)
+//    {
+//       shapeMatrix = 0.0;
+//       const IntegrationPoint &ip = ir->IntPoint(i);
+//       // el.CalcDShape(ip, dshape);
+//       el.CalcShape(ip, shape);
+
+//       for (int i = 0; i < vdim; i++)
+//       {
+//          for (int j = 0; j < vdim*ndof; j++)
+//          {
+//             if (i == j - (j/vdim) * vdim)
+//             {
+//                shapeMatrix(i,j) = shape(j/vdim);
+//             }
+//          }
+//       }
+
+//       // 
+
+//       MQ->Eval(MQ_ir, Trans, ip);
+
+//       Trans.SetIntPoint(&ip);
+//       CalcAdjugate(Trans.Jacobian(), adjJ);
+//       // VQ_ir.GetColumnReference(i, vec1);
+//       // vec1 *= alpha * ip.weight;
+
+//       adjJ.Mult(vec1, vec2);
+//       dshape.Mult(vec2, BdFidxT);
+
+//       AddMultVWt(shape, BdFidxT, partelmat);
+
+//       for (int d = 0; d < vdim; d++)
+//       {
+//          elmat.AddMatrix(partelmat, ndof*d, ndof*d);
+//       }
+   // }
+   
+}
+
+// void TimeSpectralOperatorIntegrator::eye(const int N, DenseMatrix &I)
+// {
+
+// }
+void TimeSpectralOperatorIntegrator::kron(const DenseMatrix &A, const DenseMatrix &B,
+                                          DenseMatrix &C)
+{
+   const int aRows = A.NumRows();
+   const int aCols = A.NumCols();
+   const int bRows = B.NumRows();
+   const int bCols = B.NumCols();
+   
+   DenseMatrix tempMat(bRows, bCols);
+
+   C.SetSize(aRows*bRows, aCols*bCols);
+
+   for (int i = 0; i < aRows; i++)
+   {
+      for (int j = 0; j < aCols; j++)
+      {
+         // C.AddMatrix(Mult(A(i,j), B), i*bRows, j*bCols);
+         tempMat.Set(A(i,j), B);
+         C.AddMatrix(tempMat, i*bRows, j*bCols);
+      }
+   }
+
+}
+
+// constructs time spectal matrix Dt
+void TimeSpectralOperatorIntegrator::getdt(const int N, const double w, DenseMatrix &dt)
+{
+    dt = 0.0;
+
+    for (int n = 0; n < N; n++)
+    {
+        for (int j = 0; j < N; j++)
+        {
+            if (j != n)
+            {
+                if (N % 2 == 0) // if N is even
+                {
+                    dt(j,n) = 0.5*w*std::pow(-1,(n-j))*std::cos(M_PI*(n-j)/N) 
+                                / std::sin(M_PI*(n-j)/N); 
+                }
+                else
+                {
+                    dt(j,n) = 0.5*w*std::pow(-1,(n-j)) 
+                                / std::sin(M_PI*(n-j)/N); 
+                }           
+            }
+        }
+    }
+
+}
+
 void MixedScalarIntegrator::AssembleElementMatrix2(
    const FiniteElement &trial_fe, const FiniteElement &test_fe,
    ElementTransformation &Trans, DenseMatrix &elmat)
@@ -960,12 +1130,23 @@ void GroupConvectionIntegrator::AssembleElementMatrix(
    }
 }
 
-void VectorConvectionIntegrator::AssembleElementMatrix(
+void TimeSpectralConvectionIntegrator::AssembleElementMatrix(
    const FiniteElement &el, ElementTransformation &Trans, DenseMatrix &elmat)
 {
    int ndof = el.GetDof();
-   int spaceDim = el.GetDim();
+   // int spaceDim = el.GetDim();
 
+   elmat.SetSize(ndof*vdim);
+   partelmat.SetSize(ndof);
+
+   ConvectionIntegrator convInt(VQ, alpha);
+   convInt.AssembleElementMatrix(el, Trans, partelmat);
+   
+   for (int d = 0; d < vdim; d++)
+   {
+      elmat.AddMatrix(partelmat, ndof*d, ndof*d);
+   }
+   /*
 #ifdef MFEM_THREAD_SAFE
    DenseMatrix dshape, adjJ, VQ_ir, partelmat;
    Vector shape, vec2, BdFidxT;
@@ -1012,6 +1193,7 @@ void VectorConvectionIntegrator::AssembleElementMatrix(
          elmat.AddMatrix(partelmat, ndof*d, ndof*d);
       }
    }
+   */
 }
 
 
