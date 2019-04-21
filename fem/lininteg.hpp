@@ -93,9 +93,11 @@ public:
 class DomainLFIntegrator : public DeltaLFIntegrator
 {
    Vector shape;
-   Coefficient &Q;
-   int oa, ob;
+   // Coefficient &Q;
+   // int oa, ob;
 public:
+   Coefficient &Q; // take this out
+   int oa, ob; // take this out
    /// Constructs a domain integrator with a given Coefficient
    DomainLFIntegrator(Coefficient &QF, int a = 2, int b = 0)
    // the old default was a = 1, b = 1
@@ -414,6 +416,32 @@ public:
                                        Vector &elvect);
    virtual void AssembleRHSElementVect(const FiniteElement &el,
                                        FaceElementTransformations &Tr,
+                                       Vector &elvect);
+};
+
+class TSLFIntegrator : public LinearFormIntegrator
+{
+private:
+   // Should be:
+   // LinearFormIntegrator *lfi;
+   DomainLFIntegrator *lfi;
+   int vdim;
+   double omega;
+   Vector partelvect;
+
+public:
+   /// Construct Time Spectral Linear Form Integrator based on existing
+   /// linear form integrators
+   /// NEED TO CHECK is_delta -> look at LinearForm::AddDomainIntegrator
+   // Should be:
+   // TSLFIntegrator(LinearFormIntegrator *lfi, int N, double w)
+   TSLFIntegrator(DomainLFIntegrator *lfi, int N, double w)
+      : LinearFormIntegrator(), lfi(lfi), vdim(N), omega(w) { }
+
+   /// Construct RHS element vector by stacking block vectors on top of
+   /// one another N times
+   virtual void AssembleRHSElementVect(const FiniteElement &el,
+                                       ElementTransformation &Trans,
                                        Vector &elvect);
 };
 

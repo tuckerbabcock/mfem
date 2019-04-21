@@ -285,6 +285,30 @@ public:
                                       DenseMatrix &elmat);
 };
 
+class TSMassIntegrator: public BilinearFormIntegrator
+{
+private:
+   int vdim; // actually need
+   DenseMatrix partelmat, massmat, blockmassmat, Dtmat, dt; // actually need
+   Coefficient *Q; // actually need
+
+public:
+   /// Construct an integrator with matrix coefficient q
+   TSMassIntegrator(Coefficient &q, int N, int qo = 0)
+      : vdim(N), Q(&q) { }
+   // TimeSpectralConvectionIntegrator(VectorCoefficient &q, int N, double a = 1.0)
+   //    : vdim(N), VQ(q) { alpha = a; }
+
+// public:
+   int GetVDim() const { return vdim; }
+   void SetVDim(int vdim) { this->vdim = vdim; }
+
+   virtual void AssembleElementMatrix(const FiniteElement &el,
+                                      ElementTransformation &Trans,
+                                      DenseMatrix &elmat);
+
+};
+
 /** An abstract class for integrating the product of two scalar basis functions
     with an optional scalar coefficient. */
 class MixedScalarIntegrator: public BilinearFormIntegrator

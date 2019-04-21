@@ -152,6 +152,7 @@ void TimeSpectralOperatorIntegrator::AssembleElementMatrix(
 
    /// Construct block mass matrix M
    MassIntegrator MassInt(*Q);
+   partelmat = 0.0;
    MassInt.AssembleElementMatrix(el, Trans, partelmat);
    
    for (int d = 0; d < vdim; d++)
@@ -159,86 +160,24 @@ void TimeSpectralOperatorIntegrator::AssembleElementMatrix(
       blockmassmat.AddMatrix(partelmat, ndof*d, ndof*d);
    }
 
+   // mfem::out << "Block mass matrix: \n";
+   // blockmassmat.PrintMatlab(mfem::out);
+
    /// Construct dense skew matrix Dt = kron(dt, eye(ndof))
    getdt(vdim, omega, dt);
 
+   Dtmat = 0.0;
    partelmat.Diag(1.0, ndof); // create identity matrix
    kron(dt, partelmat, Dtmat);
 
+   // mfem::out << "Dt matrix: \n";
+   // Dtmat.PrintMatlab(mfem::out);
+
+   elmat = 0.0;
    Mult(blockmassmat, Dtmat, elmat);
-
-
-
-
-
-
-
-   
-   
-// #ifdef MFEM_THREAD_SAFE
-//    DenseMatrix dshape, adjJ, MQ_ir, partelmat;
-//    Vector shape, vec2, BdFidxT;
-//    DenseMatrix shapeMatrix;
-// #endif
-//    elmat.SetSize(ndof*vdim);
-//    // dshape.SetSize(ndof,spaceDim);
-//    adjJ.SetSize(spaceDim);
-//    partelmat.SetSize(ndof);
-//    shape.SetSize(ndof);
-//    vec2.SetSize(spaceDim);
-//    BdFidxT.SetSize(ndof);
-
-//    shapeMatrix.SetSize(vdim,vdim*ndof);
-
-//    Vector vec1;
-
-//    const IntegrationRule *ir = IntRule;
-//    if (ir == NULL)
-//    {
-//       int order = Trans.OrderGrad(&el) + Trans.Order() + el.GetOrder();
-//       // ir = &IntRules.Get(el.GetGeomType(), order);
-//       ir = &IntRules.Get(el, order); // New overload
-//    }
-
-//    elmat = 0.0;
-//    for (int i = 0; i < ir->GetNPoints(); i++)
-//    {
-//       shapeMatrix = 0.0;
-//       const IntegrationPoint &ip = ir->IntPoint(i);
-//       // el.CalcDShape(ip, dshape);
-//       el.CalcShape(ip, shape);
-
-//       for (int i = 0; i < vdim; i++)
-//       {
-//          for (int j = 0; j < vdim*ndof; j++)
-//          {
-//             if (i == j - (j/vdim) * vdim)
-//             {
-//                shapeMatrix(i,j) = shape(j/vdim);
-//             }
-//          }
-//       }
-
-//       // 
-
-//       MQ->Eval(MQ_ir, Trans, ip);
-
-//       Trans.SetIntPoint(&ip);
-//       CalcAdjugate(Trans.Jacobian(), adjJ);
-//       // VQ_ir.GetColumnReference(i, vec1);
-//       // vec1 *= alpha * ip.weight;
-
-//       adjJ.Mult(vec1, vec2);
-//       dshape.Mult(vec2, BdFidxT);
-
-//       AddMultVWt(shape, BdFidxT, partelmat);
-
-//       for (int d = 0; d < vdim; d++)
-//       {
-//          elmat.AddMatrix(partelmat, ndof*d, ndof*d);
-//       }
-   // }
-   
+   // elmat = Dtmat;
+   // mfem::out << "elmat: \n";
+   // elmat.PrintMatlab(mfem::out);
 }
 
 // void TimeSpectralOperatorIntegrator::eye(const int N, DenseMatrix &I)
@@ -282,18 +221,54 @@ void TimeSpectralOperatorIntegrator::getdt(const int N, const double w, DenseMat
             {
                 if (N % 2 == 0) // if N is even
                 {
-                    dt(j,n) = 0.5*w*std::pow(-1,(n-j))*std::cos(M_PI*(n-j)/N) 
+                    dt(n,j) = 0.5*w*std::pow(-1,(n-j))*std::cos(M_PI*(n-j)/N) 
                                 / std::sin(M_PI*(n-j)/N); 
                 }
                 else
                 {
-                    dt(j,n) = 0.5*w*std::pow(-1,(n-j)) 
+                    dt(n,j) = 0.5*w*std::pow(-1,(n-j)) 
                                 / std::sin(M_PI*(n-j)/N); 
                 }           
             }
         }
     }
 
+}
+
+void TSMassIntegrator::AssembleElementMatrix(
+   const FiniteElement &el, ElementTransformation &Trans, DenseMatrix &elmat)
+{
+   int ndof = el.GetDof();
+
+   elmat.SetSize(ndof*vdim);
+   partelmat.SetSize(ndof);
+   // blockmassmat.SetSize(ndof*vdim);
+   // Dtmat.SetSize(ndof*vdim);
+   // dt.SetSize(vdim);
+
+
+   // ConvectionIntegrator convInt(VQ, alpha);
+   // convInt.AssembleElementMatrix(el, Trans, partelmat);
+   
+   // for (int d = 0; d < vdim; d++)
+   // {
+   //    elmat.AddMatrix(partelmat, ndof*d, ndof*d);
+   // }
+   // MassIntegrator(Coefficient &q, const IntegrationRule *ir = NULL)
+   //    : BilinearFormIntegrator(ir), Q(&q) { }
+
+
+   /// Construct block mass matrix M
+   MassIntegrator MassInt(*Q);
+   partelmat = 0.0;
+   MassInt.AssembleElementMatrix(el, Trans, partelmat);
+   
+   elmat = 0.0;
+   for (int d = 0; d < vdim; d++)
+   {
+      elmat.AddMatrix(partelmat, ndof*d, ndof*d);
+   }
+   // elmat = blockmassmat;
 }
 
 void MixedScalarIntegrator::AssembleElementMatrix2(
@@ -1140,60 +1115,20 @@ void TimeSpectralConvectionIntegrator::AssembleElementMatrix(
    partelmat.SetSize(ndof);
 
    ConvectionIntegrator convInt(VQ, alpha);
+   partelmat = 0.0;
    convInt.AssembleElementMatrix(el, Trans, partelmat);
    
+   // mfem::out << "part elmat Conv:\n";
+   // partelmat.PrintMatlab(mfem::out);
+
+   elmat = 0.0;
    for (int d = 0; d < vdim; d++)
    {
       elmat.AddMatrix(partelmat, ndof*d, ndof*d);
    }
-   /*
-#ifdef MFEM_THREAD_SAFE
-   DenseMatrix dshape, adjJ, VQ_ir, partelmat;
-   Vector shape, vec2, BdFidxT;
-#endif
-   elmat.SetSize(ndof*vdim);
-   dshape.SetSize(ndof,spaceDim);
-   adjJ.SetSize(spaceDim);
-   partelmat.SetSize(ndof);
-   shape.SetSize(ndof);
-   vec2.SetSize(spaceDim);
-   BdFidxT.SetSize(ndof);
 
-   Vector vec1;
-
-   const IntegrationRule *ir = IntRule;
-   if (ir == NULL)
-   {
-      int order = Trans.OrderGrad(&el) + Trans.Order() + el.GetOrder();
-      // ir = &IntRules.Get(el.GetGeomType(), order);
-      ir = &IntRules.Get(el, order); // New overload
-   }
-
-   VQ.Eval(VQ_ir, Trans, *ir);
-
-   elmat = 0.0;
-   for (int i = 0; i < ir->GetNPoints(); i++)
-   {
-      const IntegrationPoint &ip = ir->IntPoint(i);
-      el.CalcDShape(ip, dshape);
-      el.CalcShape(ip, shape);
-
-      Trans.SetIntPoint(&ip);
-      CalcAdjugate(Trans.Jacobian(), adjJ);
-      VQ_ir.GetColumnReference(i, vec1);
-      vec1 *= alpha * ip.weight;
-
-      adjJ.Mult(vec1, vec2);
-      dshape.Mult(vec2, BdFidxT);
-
-      AddMultVWt(shape, BdFidxT, partelmat);
-
-      for (int d = 0; d < vdim; d++)
-      {
-         elmat.AddMatrix(partelmat, ndof*d, ndof*d);
-      }
-   }
-   */
+   // mfem::out << "elmat Conv:\n";
+   // elmat.PrintMatlab(mfem::out);
 }
 
 

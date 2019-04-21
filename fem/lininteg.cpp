@@ -22,6 +22,39 @@ void LinearFormIntegrator::AssembleRHSElementVect(
    mfem_error("LinearFormIntegrator::AssembleRHSElementVect(...)");
 }
 
+void TSLFIntegrator::AssembleRHSElementVect(const FiniteElement &el,
+                                             ElementTransformation &Trans,
+                                             Vector &elvect)
+{
+   int ndof = el.GetDof();
+
+   elvect.SetSize(ndof*vdim);
+   partelvect.SetSize(ndof);
+
+   double t;
+   const double T = 2*M_PI/omega;
+	const double dt = T / (vdim);
+   
+   partelvect = 0.0;
+   
+   elvect = 0.0;
+   for (int ti = 0; ti < vdim; ti++)
+   {
+      t = dt*ti;
+      // mfem::out << "t: " << t << "\n";
+      lfi->Q.SetTime(t); // won't always work
+
+      partelvect = 0.0;
+      lfi->AssembleRHSElementVect(el, Trans, partelvect);
+
+      // mfem::out << "Part elvect: t = " << t << "\n";
+      // partelvect.Print(mfem::out, 10);
+      elvect.SetVector(partelvect, ndof*ti);
+   }
+   // mfem::out << "Elvect:\n";
+   // elvect.Print(mfem::out, 10);
+}
+
 
 void DomainLFIntegrator::AssembleRHSElementVect(const FiniteElement &el,
                                                 ElementTransformation &Tr,

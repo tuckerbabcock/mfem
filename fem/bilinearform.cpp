@@ -323,12 +323,13 @@ void BilinearForm::Assemble (int skip_zeros)
             const FiniteElement &fe = *fes->GetFE(i);
             eltrans = fes->GetElementTransformation(i);
             dbfi[0]->AssembleElementMatrix(fe, *eltrans, elmat);
+            // mfem::out << "made it here\n";
             for (int k = 1; k < dbfi.Size(); k++)
             {
                dbfi[k]->AssembleElementMatrix(fe, *eltrans, elemmat);
                // mfem::out << "above +=\n";
-               elmat.PrintMatlab(mfem::out);
-               elemmat.PrintMatlab(mfem::out);
+               // elemmat.PrintMatlab(mfem::out);
+               // elemmat.Print(mfem::out, 10);
                elmat += elemmat;
                // mfem::out << "below +=";
             }
@@ -354,6 +355,10 @@ void BilinearForm::Assemble (int skip_zeros)
          {
             // mfem::out << "vdofs vector:\n";
             // vdofs.Print(mfem::out, width = 10);
+            // mfem::out << "elmat_p:\n";
+            // elmat_p->PrintMatlab();
+            // mfem::out << "vdofs: \n";
+            // vdofs.Print(mfem::out, 15);
             mat->AddSubMatrix(vdofs, vdofs, *elmat_p, skip_zeros);
             if (hybridization)
             {
