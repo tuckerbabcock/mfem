@@ -2,28 +2,9 @@
 //
 // Compile with: make ex1
 //
-// Sample runs:  ex1 -m ../data/square-disc.mesh
-//               ex1 -m ../data/star.mesh
-//               ex1 -m ../data/star-mixed.mesh
-//               ex1 -m ../data/escher.mesh
-//               ex1 -m ../data/fichera.mesh
-//               ex1 -m ../data/fichera-mixed.mesh
-//               ex1 -m ../data/toroid-wedge.mesh
-//               ex1 -m ../data/square-disc-p2.vtk -o 2
-//               ex1 -m ../data/square-disc-p3.mesh -o 3
-//               ex1 -m ../data/square-disc-nurbs.mesh -o -1
-//               ex1 -m ../data/star-mixed-p2.mesh -o 2
-//               ex1 -m ../data/disc-nurbs.mesh -o -1
-//               ex1 -m ../data/pipe-nurbs.mesh -o -1
-//               ex1 -m ../data/fichera-mixed-p2.mesh -o 2
-//               ex1 -m ../data/star-surf.mesh
-//               ex1 -m ../data/square-disc-surf.mesh
-//               ex1 -m ../data/inline-segment.mesh
-//               ex1 -m ../data/amr-quad.mesh
-//               ex1 -m ../data/amr-hex.mesh
-//               ex1 -m ../data/fichera-amr.mesh
-//               ex1 -m ../data/mobius-strip.mesh
-//               ex1 -m ../data/mobius-strip.mesh -o -1 -sc
+// Sample runs:  advectionTest -m ../data/square.msh
+//               advectionTest -m ../data/square.msh -p 2 -n 9
+//               advectionTest -m ../data/square.msh -p 3 -n 30
 //
 // Description:  This example code demonstrates the use of MFEM to define a
 //               simple finite element discretization of the Laplace problem
@@ -44,6 +25,7 @@
 #include <fstream>
 #include <iostream>
 #include <cmath>
+#include <chrono>  // for high_resolution_clock
 
 using namespace std;
 using namespace mfem;
@@ -54,11 +36,6 @@ double omega;
 // Exact solution
 double u_exact(const double x, const double y, const double t);
 
-// Exact derivates
-double u_t(const double x, const double y, const double t);
-double u_x(const double x, const double y, const double t);
-double u_y(const double x, const double y, const double t);
-
 // Prescribed time-independent boundary and right-hand side functions.
 void bdr_func(const Vector &X, Vector &V);
 double rhs_func(const Vector &X, double t);
@@ -66,6 +43,7 @@ double rhs_func(const Vector &X, double t);
 // Velocity coefficient (returns a = [1,1])
 void velocity_function(const Vector &x, Vector &v);
 
+// FE_Evolution class used for pseudo-time stepping
 class FE_Evolution : public TimeDependentOperator
 {
 private:
@@ -84,23 +62,23 @@ public:
    virtual ~FE_Evolution() { }
 };
 
+
 int main(int argc, char *argv[])
 {
    // 1. Parse command-line options.
-   // const char *mesh_file = "../data/unitGridTestMesh.msh";
-   // const char *mesh_file = "../data/squareBoundaryMesh.msh";
-   const char *mesh_file = "../data/square.msh";
-   // const char *mesh_file = "../data/singleelem.msh";
+   // const char *mesh_file = "../data/square.msh";
+   const char *mesh_file = "../data/singleelem_quad.msh";
    // const char *mesh_file = "../data/twoelem.msh";
    // const char *mesh_file = "../data/beam-tri.mesh";
    int order = 1;
    bool static_cond = false;
-   bool visualization = 1;
-   bool sbp = 0;
+   bool visualization = false;
 	problem = 1;
 	omega = 1;
 	int ref_levels = 0;
-	int N = 3; // number of time levels -- add option to be parsed
+	int N = 3; // number of time levels
+
+   // Pseudotime stepping
    double tau_final = 0.5;
    double dtau = 0.001;
    bool pseudotime = false;
@@ -116,18 +94,19 @@ int main(int argc, char *argv[])
    args.AddOption(&visualization, "-vis", "--visualization", "-no-vis",
                   "--no-visualization",
                   "Enable or disable GLVis visualization.");
-   args.AddOption(&sbp, "-sbp", "--summationbyparts", "-no-sbp",
-                  "--no-summationbyparts",
-                  "Enable or disable use of SBP operators.");
 	args.AddOption(&problem, "-p", "--problem",
-                  "Problem setup to use: 0 = linear displacement, "
-						"2 == quadratic displacement.");
+                  "Problem setup to use: 1 = simple wave, "
+						"2 = stiff wave,"
+                  "3 = triangle wave");
 	args.AddOption(&ref_levels, "-r", "--ref-levels",
                   "Number of initial uniform refinement levels.");
    args.AddOption(&N, "-n", "--time-levels",
                   "Numbers of time levels to use. Default N = 1.");
    args.AddOption(&omega, "-f", "--frequency",
                   "Exact solution frequency");
+   args.AddOption(&pseudotime, "-pseudotime", "--pseudotime", 
+                  "-no-pseudotime", "--no-pseudotime",
+                  "Enable or disable pseudo time stepping");
    args.Parse();
    if (!args.Good())
    {
@@ -159,11 +138,7 @@ int main(int argc, char *argv[])
    //    Lagrange finite elements of the specified order. If order < 1, we
    //    instead use an isoparametric/isogeometric space.
    FiniteElementCollection *fec;
-   if (sbp)
-   {
-      fec = new H1_SBPCollection(order, dim);
-   }
-   else if (order > 0)
+   if (order > 0)
    {
       fec = new H1_FECollection(order, dim);
    }
@@ -176,26 +151,30 @@ int main(int argc, char *argv[])
    {
       fec = new H1_FECollection(order = 1, dim);
    }
+
+   // 5. Create finite element space of N dimension by stacking N scalar spaces
+   //    on top of each other
    FiniteElementSpace *fespace = new FiniteElementSpace(mesh, fec, N, Ordering::byNODES);
    mfem::out << "Number of finite element unknowns: "
         << fespace->GetTrueVSize() << endl;
 
-	/// MOVED ABOVE 
-   // 7. Define the solution vector x as a finite element grid function
+   // 6. Define the solution vector x as a finite element grid function
    //    corresponding to fespace. Initialize x with initial guess of zero,
    //    which satisfies the boundary conditions.
    GridFunction x(fespace);
    x = 100.0;
 
+   // 7. Create a vector function coefficient that will be used to strongly
+   //    impose boundary conditions at each time level. The function `bdr_func`
+   //    is a vector valued function that evaluates the exact solution at each
+   //    time level, with the exact solution given by the function `u_exact()`.
    VectorFunctionCoefficient bdr(N, bdr_func);
 
-   // 5. Determine the list of true (i.e. conforming) essential boundary dofs.
-   //    In this example, the boundary conditions are defined by marking all
-   //    the boundary attributes from the mesh as essential (Dirichlet) and
-   //    converting them to a list of true dofs.
+   // 8. Determine the list of essential boundary dofs. In the problems
+   //    considered here, the lower left hand corner of the mesh is where the
+   //    boundary conditions will be imposed, so attributes 1 and 4 are marked
+   //    as Dirichlet
    Array<int> ess_tdof_list;
-   mfem::out << "mesh boundary attributes: \n";
-   mesh->bdr_attributes.Print();
    if (mesh->bdr_attributes.Size())
    {
       Array<int> ess_bdr(mesh->bdr_attributes.Max());
@@ -204,8 +183,6 @@ int main(int argc, char *argv[])
       ess_bdr = 0;
       ess_bdr[0] = 1;
       ess_bdr[3] = 1;
-      mfem::out << "ess_bdr: \n";
-      ess_bdr.Print(mfem::out, 100);
 
 		// Project boundary conditions onto grid function to strongly impose
 		// boundary conditions. BC's are defined in the function `bdr_func`.
@@ -213,9 +190,11 @@ int main(int argc, char *argv[])
       fespace->GetEssentialTrueDofs(ess_bdr, ess_tdof_list);
    }
 
+   // Define the velocity vector for the advection problem, in this case just
+   // the vector [1, 1]
    VectorFunctionCoefficient velocity(dim, velocity_function);
-   // FunctionCoefficient inflow(inflow_function);
-   // FunctionCoefficient u0(u0_function);
+
+   // Define coefficient for mass matrix
    ConstantCoefficient one(1.0);
 
 	// construct bilinear form associated with spatial discretization
@@ -226,12 +205,11 @@ int main(int argc, char *argv[])
 
    // add domain integrator assosciated with advection discretization
    k->AddDomainIntegrator(new TimeSpectralConvectionIntegrator(velocity, N, 1.0));
-   // k->AddDomainIntegrator(new ConvectionIntegrator(velocity, 1.0));
 
    // create linear form
    LinearForm *b = new LinearForm(fespace);
 
-   // Functio coefficient for exact rhs function for forcing
+   // Function coefficient for exact rhs function for forcing
    FunctionCoefficient rhs(rhs_func);
 
    // Should be:
@@ -240,29 +218,31 @@ int main(int argc, char *argv[])
 	b->AddDomainIntegrator(new TSLFIntegrator(new DomainLFIntegrator(rhs), N, omega));
 
    int skip_zeros = 0; // 0?
-   mfem::out << "above assemble\n";
    k->Assemble(skip_zeros);
-   mfem::out << "below\n";
    k->Finalize(skip_zeros);
    b->Assemble();
 
-   GridFunction g(fespace);
+   // 
+   // GridFunction g(fespace);
 
+   // If using pseudo time stepping
    if (pseudotime)
    {
-      // Construct bilinear form associated with pseudo-time stepping
+      // Construct bilinear form associated with pseudo time stepping term
       BilinearForm *m = new BilinearForm(fespace);
+
+      // Add time spectral mass matrix integrator
       m->AddDomainIntegrator(new TSMassIntegrator(one, N));
-      // mfem::out << "above m assemble\n";
+
+      // Assemble time spectral pseudo time bilinear form
       m->Assemble();
-      // mfem::out << "below pseudotime\n";
       m->Finalize();
 
-      // Project exact solution as initial condition
+      // Project initial condition
       ConstantCoefficient zero(1.0);
       x.ProjectCoefficient(bdr);
       
-      // 8. Define the time-dependent evolution operator describing the ODE
+      // 9. Define the time-dependent evolution operator describing the ODE
       //    right-hand side, and perform time-integration (looping over the time
       //    iterations, ti, with a time-step dt).
       FE_Evolution adv(m->SpMat(), k->SpMat(), *b);
@@ -286,41 +266,33 @@ int main(int argc, char *argv[])
          }
       }
    }
-   else
+   else // Not using pseudo time stepping
    {
+      // Open output file to write matrix info to
       char outfileName[32];
 		snprintf(outfileName, 32, "matrixsystem.txt");
       ofstream outputFile;
       outputFile.open(outfileName, ios::out); 
-      int rowdata[] = {0,1,2,3,4,5,6,7,8};
-      Array<int> rows(*rowdata);
 
-      DenseMatrix subm;
-      subm.SetSize(9);
-      subm = 0.0;
       if (outputFile.is_open())
       {
+         // Print matrices to file in matlab format for debugging and testing
+         // stiffness matrix before assembly
          outputFile << "k = [";
          k->SpMat().PrintMatlab(outputFile);
          outputFile << "];\n";
-         // k->SpMat().GetSubMatrix(rows, rows, subm);
-         // mfem::out << "A1: \n";
-         // subm.PrintMatlab();
          SparseMatrix A;
          Vector B, X;
          k->FormLinearSystem(ess_tdof_list, x, *b, A, X, B);
-         mfem::out << "A2: \n";
-         k->SpMat().PrintInfo(mfem::out);
+         // stiffness matrix after assembly
          outputFile << "k2 = [";
          k->SpMat().PrintMatlab(outputFile);
          outputFile << "];\n";
-         // mfem::out << "X: \n";
-         // X.Print_HYPRE(mfem::out);
-         // mfem::out << "B: \n";
-         // B.Print_HYPRE(mfem::out);
 
          cout << "Size of linear system: " << A.Height() << endl;
 
+         // Start timing
+         std::chrono::time_point<std::chrono::high_resolution_clock> start = std::chrono::high_resolution_clock::now();
 #ifndef MFEM_USE_SUITESPARSE
          // 10. Define a simple symmetric Gauss-Seidel preconditioner and use it to
          //     solve the system A X = B with PCG.
@@ -333,6 +305,11 @@ int main(int argc, char *argv[])
          umf_solver.SetOperator(A);
          umf_solver.Mult(B, X);
 #endif
+         // End timing and compute interval
+         std::chrono::time_point<std::chrono::high_resolution_clock> finish = std::chrono::high_resolution_clock::now();
+         std::chrono::duration<double> elapsed = finish - start;
+         std::cout << "\nElapsed time: " << elapsed.count() << " s\n";
+         // solution vector
          outputFile << "X = [";
          X.Print_HYPRE(outputFile);
          outputFile << "];\n";
@@ -340,73 +317,44 @@ int main(int argc, char *argv[])
          // 11. Recover the solution as a finite element grid function.
          k->RecoverFEMSolution(X, *b, x);
 
+         // solution vector
          outputFile << "x = [";
          x.Print_HYPRE(outputFile);
          outputFile << "];\n";
+
+         // rhs vector
          outputFile << "b = [";
          b->Print_HYPRE(outputFile);
-         outputFile << "];\n";
-
-         // 11b. Create grid function g and project solution onto it for visualizetion
-         GridFunction g(fespace);
-         g = 0.0;
-         g.ProjectCoefficient(bdr);
-
-         outputFile << "g =[";
-         g.Print_HYPRE(outputFile);
          outputFile << "];\n";
       }
       outputFile.close();
    }
 
-   // // 11b. Create grid function g and project solution onto it for visualizetion
-   // GridFunction g(fespace);
+   // 11. Create grid function g and project solution onto it for visualization
+   //     of exact solution
+   GridFunction g(fespace);
    g = 0.0;
    g.ProjectCoefficient(bdr);
-
-   // GridFunction err(fespace);
-   // err = 0.0;
-   // err = x-g;
-
-   // mfem::out << "g:\n";
-   // g.Print_HYPRE(mfem::out);
-
-   // mfem::out << "g"
-   mfem::out << "\ng err:\n|| u_h - u ||_{L^2} = " << g.ComputeL2Error(bdr) << '\n' << endl;
 
    ofstream outg("exactSol.vtk");
    outg.precision(14); 
    mesh->PrintVTK(outg, order); 
    g.SaveVTK(outg, "sol", order);
 
+   mfem::out << "\n|| g_h - g ||_{L^2} = " << g.ComputeL2Error(bdr) << '\n' << endl;
+
 	// 12. Compute and print the L^2 norm of the error.
-   mfem::out << "x.vdim: " << x.VectorDim() << " x.size: " << x.Size() << "\n";
+   mfem::out << "Time levels: " << x.VectorDim() << " x.size: " << x.Size() << "\n";
    mfem::out << "\n|| u_h - u ||_{L^2} = " << x.ComputeL2Error(bdr) << '\n' << endl;
-	mfem::out << "h: " << 0.1 / pow(2, ref_levels) << "\n";
 
-   // 12. Save the refined mesh and the solution. This output can be viewed later
-   //     using GLVis: "glvis -m refined.mesh -g sol.gf".
-   // ofstream mesh_ofs("refined.mesh");
-   // mesh_ofs.precision(8);
-   // mesh->Print(mesh_ofs);
-   // mesh->PrintVTK(mesh_ofs); 
-   // ofstream sol_ofs("sol.gf");
-   // sol_ofs.precision(8);
-   // x.Save(sol_ofs);
-
+   // Save the solution to a vtk mesh file with a filename indicating order
+   // and time levels
    char solFileName[32];
-
    snprintf(solFileName, 32, "adv_TS_P%d_N%d.vtk", order, N);
-
    ofstream omesh(solFileName);
    omesh.precision(14); 
    mesh->PrintVTK(omesh, order); 
    x.SaveVTK(omesh, "sol", order);
-
-   // ofstream outErr("err.vtk");
-   // outErr.precision(14); 
-   // mesh->PrintVTK(outErr, order); 
-   // err.SaveVTK(outErr, "err", order);
 
    // 13. Send the solution by socket to a GLVis server.
    if (visualization)
@@ -451,14 +399,14 @@ void FE_Evolution::Mult(const Vector &x, Vector &y) const
    M_solver.Mult(z, y);
 }
 
+// Advection velocity function
 void velocity_function(const Vector &x, Vector &v)
 {
    v(0) = 1.0;
    v(1) = 1.0;
 }
 
-// Used for the Dirichlet BC at each time level
-// This function works correctly
+// Used for setting the Dirichlet BC at each time level
 void bdr_func(const Vector &X, Vector &V)
 {
 	double x = X(0), y = X(1);
@@ -475,34 +423,26 @@ void bdr_func(const Vector &X, Vector &V)
 // exact time domain solution
 double u_exact(const double x, const double y, const double t)
 {
-	double u = std::cos(0.5*x + 0.5*y - t);
-	// double u = std::cos(x + y - t);
+   double u = 0;
+   switch (problem)
+   {
+      case 0:
+      case 1: u = cos(0.5*x + 0.5*y - t); break;
+      case 2: u = cos(0.5*x + 0.5*y - t) - 0.5*cos(4*(0.5*x + 0.5*y - t)); break;
+      case 3: u = asin(cos(0.5*x + 0.5*y - t)); break;
+      default: MFEM_ABORT("Invalid problem number. Valid options are"
+               "1: Simple traveling wave"
+               "2: Stiff traveling wave"
+               "3: Traveling triangle wave");
+   }
 	return u;
 }
 
-// exact derivates
-double u_t(const double x, const double y, const double t)
-{
-   double ut = omega * std::sin(x + y - omega*t);
-   return ut;
-}
-double u_x(const double x, const double y, const double t)
-{
-   double ux =  -std::sin(x + y - omega*t);
-   return ux;
-}
-double u_y(const double x, const double y, const double t)
-{
-   double uy = -std::sin(x + y - omega*t);
-   return uy;
-}
-
-// right hand side function for manufactured solution
+// right hand side function for manufactured solution, all cases considered
+// have zero rhs
 double rhs_func(const Vector &X, double t)
 {
-	double x = X(0), y = X(1), z = 0.0;
+   double z = 0;
 
-   z = 0.0;
-   // z = -sin(x + y - t);
    return z;
 }

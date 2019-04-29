@@ -102,8 +102,6 @@ int main(int argc, char *argv[])
    //    largest number that gives a final mesh with no more than 50,000
    //    elements.
    {
-      // int ref_levels =
-         // (int)floor(log(50000./mesh->GetNE())/log(2.)/dim);
       for (int l = 0; l < ref_levels; l++)
       {
          mesh->UniformRefinement();
@@ -135,7 +133,6 @@ int main(int argc, char *argv[])
    cout << "Number of finite element unknowns: "
         << fespace->GetTrueVSize() << endl;
 
-	/// MOVED ABOVE 
    // 7. Define the solution vector x as a finite element grid function
    //    corresponding to fespace. Initialize x with initial guess of zero,
    //    which satisfies the boundary conditions.
@@ -152,9 +149,7 @@ int main(int argc, char *argv[])
    Array<int> ess_tdof_list;
    if (mesh->bdr_attributes.Size())
    {
-      // mfem::out << "in if\n";
       Array<int> ess_bdr(mesh->bdr_attributes.Max());
-      // mfem::out << "below array\n";
       ess_bdr = 1;
 
 		// Project boundary conditions onto grid function to strongly impose
@@ -242,6 +237,7 @@ int main(int argc, char *argv[])
    sol_ofs.precision(8);
    x.Save(sol_ofs);
 
+   // Save solution mesh in vtk file
    char solFileName[32];
    if (sbp)
    {
@@ -252,6 +248,7 @@ int main(int argc, char *argv[])
       snprintf(solFileName, 32, "exSBP_FE_P%d.vtk", order);
    }
 
+   // Save convergence study information in output file
 	char outfileName[32];
    if (problem == 1)
    {
