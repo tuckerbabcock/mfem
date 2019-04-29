@@ -226,57 +226,27 @@ private:
    // Vector shape, vec2, BdFidxT;
    // DenseMatrix shapeMatrix;
 #endif
-   // VectorCoefficient &Q;
-   // double alpha;
 
-   int vdim; // actually need
-   double omega; // actually need, frequency of periodicity
-   // Vector shape, te_shape, vec;
-   DenseMatrix partelmat, massmat, blockmassmat, Dtmat, dt; // actually need
-   // DenseMatrix mcoeff;
-   Coefficient *Q; // actually need
+   int vdim; 
+   double omega;
+   DenseMatrix partelmat, massmat, blockmassmat, Dtmat, dt;
+   Coefficient *Q; 
    VectorCoefficient *VQ;
    MatrixCoefficient *MQ;
 
    int Q_order;
 
-//    Coefficient *Q;
-
-// public:
-//    MassIntegrator(const IntegrationRule *ir = NULL)
-//       : BilinearFormIntegrator(ir) { Q = NULL; }
-//    /// Construct a mass integrator with coefficient q
-//    MassIntegrator(Coefficient &q, const IntegrationRule *ir = NULL)
-//       : BilinearFormIntegrator(ir), Q(&q) { }
    void getdt(const int N, const double w, DenseMatrix &dt);
    // void TimeSpectralOperatorIntegrator::eye(const int N, DenseMatrix &I);
    void kron(const DenseMatrix &A, const DenseMatrix &B,
                                              DenseMatrix &C);
 
 public:
-   // /// Construct an integrator with coefficient 1.0
-   // VectorMassIntegrator()
-   //    : vdim(-1), Q(NULL), VQ(NULL), MQ(NULL), Q_order(0) { }
-   // /** Construct an integrator with scalar coefficient q.
-   //     If possible, save memory by using a scalar integrator since
-   //     the resulting matrix is block diagonal with the same diagonal
-   //     block repeated. */
-   // VectorMassIntegrator(Coefficient &q, int qo = 0)
-   //    : vdim(-1), Q(&q) { VQ = NULL; MQ = NULL; Q_order = qo; }
-   // VectorMassIntegrator(Coefficient &q, const IntegrationRule *ir)
-   //    : BilinearFormIntegrator(ir), vdim(-1), Q(&q)
-   // { VQ = NULL; MQ = NULL; Q_order = 0; }
-   // /// Construct an integrator with diagonal coefficient q
-   // VectorMassIntegrator(VectorCoefficient &q, int qo = 0)
-   //    : vdim(q.GetVDim()), VQ(&q) { Q = NULL; MQ = NULL; Q_order = qo; }
 
    /// Construct an integrator with matrix coefficient q
    TimeSpectralOperatorIntegrator(Coefficient &q, int N, double w, int qo = 0)
       : vdim(N), omega(w), Q(&q) { MQ = NULL; VQ = NULL; Q_order = qo; }
-   // TimeSpectralConvectionIntegrator(VectorCoefficient &q, int N, double a = 1.0)
-   //    : vdim(N), VQ(q) { alpha = a; }
 
-// public:
    int GetVDim() const { return vdim; }
    void SetVDim(int vdim) { this->vdim = vdim; }
 
@@ -1847,14 +1817,6 @@ class TimeSpectralConvectionIntegrator: public BilinearFormIntegrator
 {
 private:
    int vdim;
-   // Vector shape, te_shape, vec;
-   // DenseMatrix partelmat;
-   // DenseMatrix mcoeff;
-   // Coefficient *Q;
-   // VectorCoefficient *VQ;
-   // MatrixCoefficient *MQ;
-
-   // int Q_order;
    #ifndef MFEM_THREAD_SAFE
    DenseMatrix dshape, adjJ, VQ_ir, partelmat;
    Vector shape, vec2, BdFidxT;
@@ -1863,25 +1825,6 @@ private:
    double alpha;
 
 public:
-   // /// Construct an integrator with coefficient 1.0
-   // VectorConvectionIntegrator()
-   //    : vdim(-1), Q(NULL), VQ(NULL), MQ(NULL), Q_order(0) { }
-   // /** Construct an integrator with scalar coefficient q.
-   //     If possible, save memory by using a scalar integrator since
-   //     the resulting matrix is block diagonal with the same diagonal
-   //     block repeated. */
-   // VectorConvectionIntegrator(Coefficient &q, int qo = 0)
-   //    : vdim(-1), Q(&q) { VQ = NULL; MQ = NULL; Q_order = qo; }
-   // VectorConvectionIntegrator(Coefficient &q, const IntegrationRule *ir)
-   //    : BilinearFormIntegrator(ir), vdim(-1), Q(&q)
-   // { VQ = NULL; MQ = NULL; Q_order = 0; }
-   // /// Construct an integrator with diagonal coefficient q
-   // VectorConvectionIntegrator(VectorCoefficient &q, int qo = 0)
-   //    : vdim(q.GetVDim()), VQ(&q) { Q = NULL; MQ = NULL; Q_order = qo; }
-   // /// Construct an integrator with matrix coefficient q
-   // VectorConvectionIntegrator(MatrixCoefficient &q, int qo = 0)
-   //    : vdim(q.GetVDim()), MQ(&q) { Q = NULL; VQ = NULL; Q_order = qo; }
-   
    TimeSpectralConvectionIntegrator(VectorCoefficient &q, int N, double a = 1.0)
       : vdim(N), VQ(q) { alpha = a; }
 
@@ -1891,10 +1834,6 @@ public:
    virtual void AssembleElementMatrix(const FiniteElement &el,
                                       ElementTransformation &Trans,
                                       DenseMatrix &elmat);
-   // virtual void AssembleElementMatrix2(const FiniteElement &trial_fe,
-   //                                     const FiniteElement &test_fe,
-   //                                     ElementTransformation &Trans,
-   //                                     DenseMatrix &elmat);
 };
 
 /** Class for integrating the bilinear form a(u,v) := (Q u, v),
