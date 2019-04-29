@@ -130,25 +130,12 @@ void TimeSpectralOperatorIntegrator::AssembleElementMatrix(
    const FiniteElement &el, ElementTransformation &Trans, DenseMatrix &elmat)
 {
    int ndof = el.GetDof();
-   // int spaceDim = el.GetDim();
 
    elmat.SetSize(ndof*vdim);
    partelmat.SetSize(ndof);
    blockmassmat.SetSize(ndof*vdim);
    Dtmat.SetSize(ndof*vdim);
    dt.SetSize(vdim);
-
-
-   // ConvectionIntegrator convInt(VQ, alpha);
-   // convInt.AssembleElementMatrix(el, Trans, partelmat);
-   
-   // for (int d = 0; d < vdim; d++)
-   // {
-   //    elmat.AddMatrix(partelmat, ndof*d, ndof*d);
-   // }
-   // MassIntegrator(Coefficient &q, const IntegrationRule *ir = NULL)
-   //    : BilinearFormIntegrator(ir), Q(&q) { }
-
 
    /// Construct block mass matrix M
    MassIntegrator MassInt(*Q);
@@ -160,30 +147,17 @@ void TimeSpectralOperatorIntegrator::AssembleElementMatrix(
       blockmassmat.AddMatrix(partelmat, ndof*d, ndof*d);
    }
 
-   // mfem::out << "Block mass matrix: \n";
-   // blockmassmat.PrintMatlab(mfem::out);
-
    /// Construct dense skew matrix Dt = kron(dt, eye(ndof))
    getdt(vdim, omega, dt);
 
    Dtmat = 0.0;
    partelmat.Diag(1.0, ndof); // create identity matrix
-   kron(dt, partelmat, Dtmat);
-
-   // mfem::out << "Dt matrix: \n";
-   // Dtmat.PrintMatlab(mfem::out);
+   kron(dt, partelmat, Dtmat); // Kronecker product of dt and identity matrix
 
    elmat = 0.0;
    Mult(blockmassmat, Dtmat, elmat);
-   // elmat = Dtmat;
-   // mfem::out << "elmat: \n";
-   // elmat.PrintMatlab(mfem::out);
 }
 
-// void TimeSpectralOperatorIntegrator::eye(const int N, DenseMatrix &I)
-// {
-
-// }
 void TimeSpectralOperatorIntegrator::kron(const DenseMatrix &A, const DenseMatrix &B,
                                           DenseMatrix &C)
 {
@@ -1109,7 +1083,6 @@ void TimeSpectralConvectionIntegrator::AssembleElementMatrix(
    const FiniteElement &el, ElementTransformation &Trans, DenseMatrix &elmat)
 {
    int ndof = el.GetDof();
-   // int spaceDim = el.GetDim();
 
    elmat.SetSize(ndof*vdim);
    partelmat.SetSize(ndof);
@@ -1117,18 +1090,12 @@ void TimeSpectralConvectionIntegrator::AssembleElementMatrix(
    ConvectionIntegrator convInt(VQ, alpha);
    partelmat = 0.0;
    convInt.AssembleElementMatrix(el, Trans, partelmat);
-   
-   // mfem::out << "part elmat Conv:\n";
-   // partelmat.PrintMatlab(mfem::out);
 
    elmat = 0.0;
    for (int d = 0; d < vdim; d++)
    {
       elmat.AddMatrix(partelmat, ndof*d, ndof*d);
    }
-
-   // mfem::out << "elmat Conv:\n";
-   // elmat.PrintMatlab(mfem::out);
 }
 
 

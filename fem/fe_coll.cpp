@@ -2554,37 +2554,7 @@ H1_SBPCollection::H1_SBPCollection(const int p, const int dim)
 {
    MFEM_VERIFY(p >= 0 && p <= 4, "H1_SBPCollection requires 0 <= order <= 4.");
    MFEM_VERIFY(dim == 2, "H1_SBPCollection requires dim == 2.");
-   // MFEM_VERIFY(dim >= 0 && dim <= 3, "H1_SBPCollection requires 0 <= dim <= 3.");
-   cout << "using SBP\n";
 
-   // const int pm1 = p - 1, pm2 = pm1 - 1, pm3 = pm2 - 1;
-
-   // int pt_type = BasisType::GetQuadrature1D(b_type);
-   /* can get rid of this, only ever have one basis type
-   b_type = BasisType::Check(b_type);
-   switch (btype)
-   {
-      case BasisType::GaussLobatto:
-      {
-         snprintf(h1_name, 32, "H1_%dD_P%d", dim, p);
-         break;
-      }
-      case BasisType::Positive:
-      {
-         snprintf(h1_name, 32, "H1Pos_%dD_P%d", dim, p);
-         break;
-      }
-      default:
-      {
-         MFEM_VERIFY(Quadrature1D::CheckClosed(pt_type) !=
-                     Quadrature1D::Invalid,
-                     "unsupported BasisType: " << BasisType::Name(btype));
-
-         snprintf(h1_name, 32, "H1@%c_%dD_P%d",
-                  (int)BasisType::GetChar(btype), dim, p);
-      }
-   }
-   */
    snprintf(h1_SBPname, 32, "SBP_%dD_P%d", dim, p);
 
    for (int g = 0; g < Geometry::NumGeom; g++)
@@ -2592,61 +2562,30 @@ H1_SBPCollection::H1_SBPCollection(const int p, const int dim)
       H1_SBPdof[g] = 0;
       H1_SBPElements[g] = NULL;
    }
-   // /* don't have segments
    for (int i = 0; i < 2; i++)
    {
       SegDofOrd[i] = NULL;
    }
-   // */
-   // for (int i = 0; i < 6; i++)
-   // {
-   //    TriDofOrd[i] = NULL;
-   // }
-   /* don't have quads
-   for (int i = 0; i < 8; i++)
-   {
-      QuadDofOrd[i] = NULL;
-   }
-   */
 
-   // /* don't think I need points
    H1_SBPdof[Geometry::POINT] = 1;
    H1_SBPElements[Geometry::POINT] = new PointFiniteElement;
-   // */
 
-   // currently only have dim == 2
    if (dim >= 1)
    {
       H1_SBPdof[Geometry::SEGMENT] = p;
-      // if (b_type == BasisType::Positive)
-      // {
-      //    H1_Elements[Geometry::SEGMENT] = new H1Pos_SegmentElement(p);
-      // }
-      // else
-      // {
-         H1_SBPElements[Geometry::SEGMENT] = new H1_SegmentElement(p+1);
-      // }
-      // /*
-      // int nodeOrder0[2] = {0, 1};
-      // int nodeOrder1[3] = {0, 2, 1};
-      // int nodeOrder2[4] = {0, 2, 3, 1};
-      // int nodeOrder3[5] = {0, 2, 4, 3, 1};
-      // int nodeOrder4[6] = {0, 2, 4, 5, 3, 1};
+
+      H1_SBPElements[Geometry::SEGMENT] = new H1_SegmentElement(p+1);
 
       int nodeOrder0[] = {};
       int nodeOrder1[1] = {0};
       int nodeOrder2[2] = {0, 1};
-      // int nodeOrder3[3] = {0, 2, 1};
       int nodeOrder3[3] = {1, 0, 2};
-      // int nodeOrder4[4] = {0, 2, 3, 1};
       int nodeOrder4[4] = {0, 2, 3, 1};
 
       int revNodeOrder0[] = {};
       int revNodeOrder1[1] = {0};
       int revNodeOrder2[2] = {1, 0};
-      // int revNodeOrder3[3] = {1, 2, 0};
       int revNodeOrder3[3] = {2, 0, 1};
-      // int revNodeOrder4[4] = {1, 3, 2, 0};
       int revNodeOrder4[4] = {1, 3, 2, 0};
 
       switch (p)
@@ -2701,19 +2640,7 @@ H1_SBPCollection::H1_SBPCollection(const int p, const int dim)
             break;
 
       }
-      // */
-   
-      // // const int pm1 = p+2, pm2 = p+1;
-      // const int pm1 = p, pm2 = pm1 - 1, pm3 = pm2 - 1;
-      // SegDofOrd[0] = new int[2*pm1];
-      // SegDofOrd[1] = SegDofOrd[0] + pm1;
-      // for (int i = 0; i < pm1; i++)
-      // {
-      //    SegDofOrd[0][i] = i;
-      //    SegDofOrd[1][i] = pm2 - i;
-      // }
    }
-   // */
 
    if (dim >= 2)
    {
@@ -2738,95 +2665,13 @@ H1_SBPCollection::H1_SBPCollection(const int p, const int dim)
             mfem_error("SBP elements are currently only supported for 0 <= order <= 4");
             break;
       }
-      // H1_dof[Geometry::TRIANGLE] = (pm1*pm2)/2;
-      // H1_dof[Geometry::SQUARE] = pm1*pm1;
-      /* only one basis type / don't have basis type
-      if (b_type == BasisType::Positive)
-      {
-         H1_Elements[Geometry::TRIANGLE] = new H1Pos_TriangleElement(p);
-         H1_Elements[Geometry::SQUARE] = new H1Pos_QuadrilateralElement(p);
-      }
-      else
-      {
-         H1_Elements[Geometry::TRIANGLE] = new H1_TriangleElement(p, btype);
-         H1_Elements[Geometry::SQUARE] = new H1_QuadrilateralElement(p, btype);
-      }
-      */
+
       const int &TriDof = H1_SBPdof[Geometry::TRIANGLE] + 3*H1_SBPdof[Geometry::POINT] + 3*H1_SBPdof[Geometry::SEGMENT];
 
       H1_SBPElements[Geometry::TRIANGLE] = new H1_SBPTriangleElement(p, TriDof);
-
-      // const int &QuadDof = H1_dof[Geometry::SQUARE];
-      /*
-      TriDofOrd[0] = new int[6*TriDof];
-      for (int i = 1; i < 6; i++)
-      {
-         TriDofOrd[i] = TriDofOrd[i-1] + TriDof;
-      }
-      // see Mesh::GetTriOrientation in mesh/mesh.cpp
-      for (int j = 0; j < pm2; j++)
-      {
-         for (int i = 0; i + j < pm2; i++)
-         {
-            int o = TriDof - ((pm1 - j)*(pm2 - j))/2 + i;
-            int k = pm3 - j - i;
-            TriDofOrd[0][o] = o;  // (0,1,2)
-            TriDofOrd[1][o] = TriDof - ((pm1-j)*(pm2-j))/2 + k;  // (1,0,2)
-            TriDofOrd[2][o] = TriDof - ((pm1-i)*(pm2-i))/2 + k;  // (2,0,1)
-            TriDofOrd[3][o] = TriDof - ((pm1-k)*(pm2-k))/2 + i;  // (2,1,0)
-            TriDofOrd[4][o] = TriDof - ((pm1-k)*(pm2-k))/2 + j;  // (1,2,0)
-            TriDofOrd[5][o] = TriDof - ((pm1-i)*(pm2-i))/2 + j;  // (0,2,1)
-         }
-      }
-      */
-
-      /* no quads
-      QuadDofOrd[0] = new int[8*QuadDof];
-      for (int i = 1; i < 8; i++)
-      {
-         QuadDofOrd[i] = QuadDofOrd[i-1] + QuadDof;
-      }
-      // see Mesh::GetQuadOrientation in mesh/mesh.cpp
-      for (int j = 0; j < pm1; j++)
-      {
-         for (int i = 0; i < pm1; i++)
-         {
-            int o = i + j*pm1;
-            QuadDofOrd[0][o] = i + j*pm1;  // (0,1,2,3)
-            QuadDofOrd[1][o] = j + i*pm1;  // (0,3,2,1)
-            QuadDofOrd[2][o] = j + (pm2 - i)*pm1;  // (1,2,3,0)
-            QuadDofOrd[3][o] = (pm2 - i) + j*pm1;  // (1,0,3,2)
-            QuadDofOrd[4][o] = (pm2 - i) + (pm2 - j)*pm1;  // (2,3,0,1)
-            QuadDofOrd[5][o] = (pm2 - j) + (pm2 - i)*pm1;  // (2,1,0,3)
-            QuadDofOrd[6][o] = (pm2 - j) + i*pm1;  // (3,0,1,2)
-            QuadDofOrd[7][o] = i + (pm2 - j)*pm1;  // (3,2,1,0)
-         }
-      }
-      */
-
-      /* dim == 2 right now
-      if (dim >= 3)
-      {
-         H1_dof[Geometry::TETRAHEDRON] = (TriDof*pm3)/3;
-         H1_dof[Geometry::CUBE] = QuadDof*pm1;
-         H1_dof[Geometry::PRISM] = TriDof*pm1;
-         if (b_type == BasisType::Positive)
-         {
-            H1_Elements[Geometry::TETRAHEDRON] = new H1Pos_TetrahedronElement(p);
-            H1_Elements[Geometry::CUBE] = new H1Pos_HexahedronElement(p);
-            H1_Elements[Geometry::PRISM] = new H1Pos_WedgeElement(p);
-         }
-         else
-         {
-            H1_Elements[Geometry::TETRAHEDRON] =
-               new H1_TetrahedronElement(p, btype);
-            H1_Elements[Geometry::CUBE] = new H1_HexahedronElement(p, btype);
-            H1_Elements[Geometry::PRISM] = new H1_WedgeElement(p, btype);
-         }
-      }
-      */
    }
 }
+
 const FiniteElement *H1_SBPCollection::FiniteElementForGeometry(
       Geometry::Type GeomType) const
 {
@@ -2844,74 +2689,16 @@ const FiniteElement *H1_SBPCollection::FiniteElementForGeometry(
 const int *H1_SBPCollection::DofOrderForOrientation(Geometry::Type GeomType,
                                                    int Or) const
 {
-   // /*
    if (GeomType == Geometry::SEGMENT)
    {
       return (Or > 0) ? SegDofOrd[0] : SegDofOrd[1];
    }
-   // else */
-   // if (GeomType == Geometry::TRIANGLE)
-   // {
-   //    return TriDofOrd[Or%6];
-   // }
-   /*
-   else if (GeomType == Geometry::SQUARE)
-   {
-      return QuadDofOrd[Or%8];
-   }
-   */
    return NULL;
 }
-
-/*
-FiniteElementCollection *H1_FECollection::GetTraceCollection() const
-{
-   int p = H1_dof[Geometry::SEGMENT] + 1;
-   int dim = -1;
-   if (!strncmp(h1_name, "H1_", 3))
-   {
-      dim = atoi(h1_name + 3);
-   }
-   else if (!strncmp(h1_name, "H1Pos_", 6))
-   {
-      dim = atoi(h1_name + 6);
-   }
-   else if (!strncmp(h1_name, "H1@", 3))
-   {
-      dim = atoi(h1_name + 5);
-   }
-   return (dim < 0) ? NULL : new H1_Trace_FECollection(p, dim, b_type);
-}
-*/
-
-/*
-const int *H1_FECollection::GetDofMap(Geometry::Type GeomType) const
-{
-   const int *dof_map = NULL;
-   const FiniteElement *fe = H1_Elements[GeomType];
-   switch (GeomType)
-   {
-      case Geometry::SEGMENT:
-      case Geometry::SQUARE:
-      case Geometry::CUBE:
-         dof_map = dynamic_cast<const TensorBasisElement *>(fe)
-                   ->GetDofMap().GetData();
-         break;
-      default:
-         MFEM_ABORT("Geometry type " << Geometry::Name[GeomType] << " is not "
-                    "implemented");
-         // The "Cartesian" ordering for other geometries is defined by the
-         // class GeometryRefiner.
-   }
-   return dof_map;
-}
-*/
 
 H1_SBPCollection::~H1_SBPCollection()
 {
    delete [] SegDofOrd[0];
-   // delete [] TriDofOrd[0];
-   // delete [] QuadDofOrd[0];
    for (int g = 0; g < Geometry::NumGeom; g++)
    {
       delete H1_SBPElements[g];

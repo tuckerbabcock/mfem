@@ -890,33 +890,21 @@ class H1_SBPCollection : public FiniteElementCollection
 {
 
 protected:
-   // int b_type = BasisType::SBP;
    char h1_SBPname[32];
    FiniteElement *H1_SBPElements[Geometry::NumGeom];
    int H1_SBPdof[Geometry::NumGeom];
-   // int nodeOrder[];
-   int *SegDofOrd[2];//, *TriDofOrd[6];
-
+   int *SegDofOrd[2];
 
 public:
    explicit H1_SBPCollection(const int p, const int dim = 2);
 
    virtual const FiniteElement *FiniteElementForGeometry(
       Geometry::Type GeomType) const;
-   // { return H1_SBPElements[GeomType]; }
    virtual int DofForGeometry(Geometry::Type GeomType) const
    { return H1_SBPdof[GeomType]; }
    virtual const int *DofOrderForOrientation(Geometry::Type GeomType,
                                              int Or) const;
    virtual const char *Name() const { return h1_SBPname; }
-
-   // FiniteElementCollection *GetTraceCollection() const;
-
-   // int GetBasisType() const { return b_type; }
-
-   /// Get the Cartesian to local H1 dof map
-   // const int *GetDofMap(Geometry::Type GeomType) const;
-
    virtual ~H1_SBPCollection();
 };
 

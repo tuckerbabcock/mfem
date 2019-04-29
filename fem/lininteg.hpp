@@ -422,8 +422,6 @@ public:
 class TSLFIntegrator : public LinearFormIntegrator
 {
 private:
-   // Should be:
-   // LinearFormIntegrator *lfi;
    DomainLFIntegrator *lfi;
    int vdim;
    double omega;
@@ -432,9 +430,6 @@ private:
 public:
    /// Construct Time Spectral Linear Form Integrator based on existing
    /// linear form integrators
-   /// NEED TO CHECK is_delta -> look at LinearForm::AddDomainIntegrator
-   // Should be:
-   // TSLFIntegrator(LinearFormIntegrator *lfi, int N, double w)
    TSLFIntegrator(DomainLFIntegrator *lfi, int N, double w)
       : LinearFormIntegrator(), lfi(lfi), vdim(N), omega(w) { }
 

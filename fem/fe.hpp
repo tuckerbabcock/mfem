@@ -2839,26 +2839,12 @@ private:
 #endif
    DenseMatrix *Dx, *Dy;
    DenseMatrixInverse Ti;
-   
-   // double p0Dx[9];
-   // double p0Dy[9];
-   // double p1Dx[49];
-   // double p1Dy[49];
-   // double p2Dx[144];
-   // double p2Dy[144];
-   // double p3Dx[324];
-   // double p3Dy[324];
-   // double p4Dx[729];
-   // double p4Dy[729];
 
 public:
-   // H1_SBPTriangleElement(const int p, const int btype = BasisType::GaussLobatto);
    H1_SBPTriangleElement(const int p, const int Do);
    virtual void CalcShape(const IntegrationPoint &ip, Vector &shape) const;
    virtual void CalcDShape(const IntegrationPoint &ip,
                            DenseMatrix &dshape) const;
-   // virtual void CalcHessian(const IntegrationPoint &ip,
-                           //  DenseMatrix &ddshape) const;
    virtual ~H1_SBPTriangleElement();
 };
 
