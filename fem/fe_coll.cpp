@@ -2574,19 +2574,19 @@ H1_SBPCollection::H1_SBPCollection(const int p, const int dim)
    {
       H1_SBPdof[Geometry::SEGMENT] = p;
 
-      H1_SBPElements[Geometry::SEGMENT] = new H1_SegmentElement(p+1);
+      H1_SBPElements[Geometry::SEGMENT] = new H1_SBPSegmentElement(p);
 
       int nodeOrder0[] = {};
       int nodeOrder1[1] = {0};
       int nodeOrder2[2] = {0, 1};
-      int nodeOrder3[3] = {1, 0, 2};
-      int nodeOrder4[4] = {0, 2, 3, 1};
+      int nodeOrder3[3] = {0, 1, 2};
+      int nodeOrder4[4] = {0, 1, 2, 3};
 
       int revNodeOrder0[] = {};
       int revNodeOrder1[1] = {0};
       int revNodeOrder2[2] = {1, 0};
-      int revNodeOrder3[3] = {2, 0, 1};
-      int revNodeOrder4[4] = {1, 3, 2, 0};
+      int revNodeOrder3[3] = {0, 2, 1};
+      int revNodeOrder4[4] = {1, 0, 3, 2};
 
       switch (p)
       {

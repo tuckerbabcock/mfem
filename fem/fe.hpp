@@ -2829,6 +2829,23 @@ public:
                            DenseMatrix &dshape) const;
 };
 
+class H1_SBPSegmentElement : public NodalTensorFiniteElement
+{
+private:
+#ifndef MFEM_THREAD_SAFE
+   mutable Vector shape_x, dshape_x;
+#endif
+   // int btype;
+   // Poly_1D::Basis *basis1d;
+
+public:
+   H1_SBPSegmentElement(const int p);
+   virtual void CalcShape(const IntegrationPoint &ip, Vector &shape) const;
+   virtual void CalcDShape(const IntegrationPoint &ip,
+                           DenseMatrix &dshape) const;
+   virtual void ProjectDelta(int vertex, Vector &dofs) const;
+};
+
 class H1_SBPTriangleElement : public NodalFiniteElement
 {
 private:
